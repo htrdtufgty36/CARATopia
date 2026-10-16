@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CARATopia Online｜SEVENTEEN 粉絲小卡純交換</title>
+<meta name="description" content="SEVENTEEN 粉絲自製的小卡線上純交換平台：登錄想換的卡，自動配對，雙方同意後才揭露聯絡方式。非官方、零金流。">
+<style>
+:root{
+  --rose:#f7cac9; --rose-d:#c9707a; --rose-l:#fdeeee;
+  --blue:#92a8d1; --blue-d:#47679e; --blue-l:#e9eef8;
+  --gold:#c9a24b; --ink:#2b2d42; --muted:#666b84; --line:#eadfe2;
+  --bg:#fffafa; --card:#fff; --ok:#2a7f62; --bad:#b83247; --warn:#a56a00;
+  --radius:14px; --shadow:0 4px 18px rgba(71,103,158,.12);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;font-size:15px}
+body.modal-open{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--blue-d)}
+h1,h2,h3{line-height:1.3;margin:0 0 .5em}
+h1{font-size:1.5rem} h2{font-size:1.2rem} h3{font-size:1.05rem}
+p{margin:.4em 0}
+
+.shell{max-width:980px;margin:0 auto;padding:0 16px 96px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 8px}
+.brand{display:flex;align-items:baseline;gap:6px;text-decoration:none;color:var(--ink);font-weight:800;font-size:1.25rem;letter-spacing:.02em}
+.brand .logo{color:var(--gold)}
+.brand em{font-style:normal;font-weight:500;color:var(--blue-d);font-size:.95rem}
+.user-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px 4px 4px;cursor:pointer;max-width:55%}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--blue));display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.user-chip .uname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:.72rem;background:var(--gold);color:#fff;border-radius:6px;padding:1px 6px;flex:none}
+.banner{background:linear-gradient(90deg,var(--rose-l),var(--blue-l));border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.82rem;color:var(--muted);margin-bottom:14px}
+.banner.warn{background:#fff4dd;color:var(--warn)}
+
+nav.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+nav.bottom ul{list-style:none;margin:0 auto;padding:0;max-width:980px;display:grid;grid-template-columns:repeat(5,1fr)}
+nav.bottom a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;text-decoration:none;color:var(--muted);font-size:.74rem;position:relative}
+nav.bottom a .ic{font-size:1.25rem;line-height:1}
+nav.bottom a.on{color:var(--blue-d);font-weight:700}
+nav.bottom a.on::before{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
+.dot{position:absolute;top:4px;left:calc(50% + 8px);background:var(--bad);color:#fff;border-radius:999px;min-width:18px;height:18px;font-size:.7rem;display:grid;place-items:center;padding:0 4px;font-weight:700}
+
+.btn{border:1px solid var(--blue-d);background:#fff;color:var(--blue-d);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;transition:transform .05s}
+.btn:hover{background:var(--blue-l)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--blue-d);color:#fff}
+.btn.primary:hover{background:#3b5a8c}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.danger:hover{background:#fdeef0}
+.btn.sm{padding:4px 10px;font-size:.85rem;border-radius:8px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.chip:focus-visible,.tile:focus-visible,nav.bottom a:focus-visible,.user-chip:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.icon-btn{border:0;background:transparent;font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:8px}
+.icon-btn:hover{background:var(--blue-l)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.between{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:8px}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:.9rem}
+.chip.on{background:var(--blue-d);border-color:var(--blue-d);color:#fff}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.filters select{width:100%}
+select,input[type=text],input[type=number],textarea{border:1px solid #d6cdd2;border-radius:10px;padding:8px 10px;background:#fff;width:100%}
+textarea{resize:vertical;min-height:64px}
+select:focus,input:focus,textarea:focus{outline:3px solid var(--blue-l);border-color:var(--blue-d)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:12px}
+.tile{background:var(--card);border:2px solid transparent;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.tile.clickable{cursor:pointer}
+.tile.clickable:hover{transform:translateY(-2px)}
+.tile.selected{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,75,.25)}
+.tile.selected::after{content:"✓";position:absolute;top:6px;right:6px;background:var(--gold);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700}
+.tile img{width:100%;aspect-ratio:11/17;object-fit:cover;background:var(--rose-l);display:block}
+.tile-info{padding:8px 10px 10px;display:flex;flex-direction:column;gap:1px}
+.tile-info strong{font-size:.98rem}
+.tile-info span,.tile-info small{font-size:.8rem;color:var(--muted)}
+.tile-info .note{color:var(--ink);font-style:italic;word-break:break-word}
+.tile-actions{display:flex;gap:6px;padding:0 10px 10px}
+
+.badge{display:inline-block;font-size:.72rem;border-radius:6px;padding:1px 7px;background:var(--blue-l);color:var(--blue-d);font-weight:600;margin-top:3px;align-self:flex-start}
+.badge.gold{background:#fbf1d6;color:#7a5a10}
+.badge.rose{background:var(--rose-l);color:#a24a55}
+.badge.ok{background:#e3f4ec;color:var(--ok)}
+.badge.bad{background:#fdeef0;color:var(--bad)}
+.badge.gray{background:#eee;color:#666}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.panel h3{margin-bottom:.3em}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;border:2px dashed var(--line);border-radius:var(--radius);background:#fff}
+.page-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 10px}
+.page-title p{margin:0;color:var(--muted);font-size:.9rem}
+
+.label-list{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.pill{background:var(--blue-l);color:var(--blue-d);border-radius:8px;padding:2px 9px;font-size:.82rem}
+.pill.rose{background:var(--rose-l);color:#a24a55}
+.score{background:linear-gradient(135deg,var(--gold),#e2c47a);color:#fff;border-radius:999px;padding:2px 12px;font-weight:700;font-size:.85rem}
+
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field .lbl{font-weight:600;font-size:.9rem}
+.hint{color:var(--muted);font-size:.8rem}
+.form-error,.plan-status.bad{color:var(--bad);font-size:.9rem;min-height:1.2em}
+.plan-status{font-size:.9rem;min-height:1.4em;margin:8px 0}
+.plan-status.ok{color:var(--ok)}
+.checkline{display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:.9rem}
+.checkline input{margin-top:4px;flex:none}
+.preview{width:96px;aspect-ratio:11/17;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--rose-l)}
+
+.modal-back{position:fixed;inset:0;background:rgba(43,45,66,.5);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:0}
+.modal-box{background:#fff;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;border-radius:18px 18px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.2)}
+.modal-box.wide{max-width:860px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.modal-head h2{margin:0}
+.modal-body{padding:14px 16px 18px;overflow:auto}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+@media(min-width:700px){.modal-back{align-items:center;padding:20px}.modal-box{border-radius:18px}}
+.two-col{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:700px){.two-col{grid-template-columns:1fr 1fr}}
+.two-col .grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+.detail-img{width:160px;aspect-ratio:11/17;object-fit:cover;border-radius:12px;border:1px solid var(--line);float:left;margin:0 14px 8px 0}
+.detail-body:after{content:"";display:block;clear:both}
+
+.item{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.trade{border-left:5px solid var(--blue)}
+.trade.negotiating{border-left-color:var(--gold)}
+.trade.completed{border-left-color:var(--ok)}
+.trade.declined,.trade.cancelled,.trade.void{border-left-color:#bbb}
+.trade .sides{display:grid;grid-template-columns:1fr;gap:6px;margin:8px 0}
+@media(min-width:600px){.trade .sides{grid-template-columns:1fr 1fr}}
+.trade .sides h4{margin:0 0 2px;font-size:.85rem;color:var(--muted)}
+.contact{background:#fbf6e6;border:1px solid #efe0b0;border-radius:10px;padding:8px 12px;margin:8px 0}
+.guide{font-size:.85rem;color:var(--muted);margin:6px 0 0;padding-left:1.2em}
+details.fold{margin-top:16px}
+details.fold summary{cursor:pointer;color:var(--muted);padding:6px 0}
+
+.welcome{max-width:560px;margin:0 auto;padding:32px 16px 48px}
+.welcome .hero{text-align:center;margin-bottom:20px}
+.welcome .hero .big{font-size:2rem;color:var(--gold)}
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;display:flex;flex-direction:column;gap:8px;z-index:80;width:min(92vw,420px);pointer-events:none}
+.toast{background:var(--ink);color:#fff;border-radius:10px;padding:10px 14px;box-shadow:var(--shadow);font-size:.9rem;pointer-events:auto}
+.toast.error{background:var(--bad)}
+.toast.ok{background:var(--ok)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<noscript><p style="padding:24px">這個網站需要啟用 JavaScript 才能使用。</p></noscript>
+
+<script>
+'use strict';
+// =====================================================================
+// ==== LOGIC START（不依賴畫面的純函式，tests/logic.test.js 會單獨測試這一段）====
+// =====================================================================
+const SCHEMA_VERSION = 1;
+const STORAGE_KEY = 'caratopia_v1';
+const ANY = 'any';
+const MEMBERS = ['S.Coups','Jeonghan','Joshua','Jun','Hoshi','Wonwoo','Woozi','DK','Mingyu','The8','Seungkwan','Vernon','Dino'];
+const ALBUMS = ['Face the Sun','Attacca','Your Choice','Heng:garae','An Ode','FML','Sector 17','17 Is Right Here'];
+const VERSIONS = ['A 版','B 版','C 版','Weverse 版','Carat 版','特典／其他'];
+const CONDITIONS = ['全新','良好','有使用痕跡'];
+const CONTACT_TYPES = ['IG','LINE','Dcard','FB'];
+const PRIORITY_LABEL = {3:'高',2:'中',1:'低'};
+const TRADE_STATUS_LABEL = {pending:'待回覆',negotiating:'洽談中',completed:'已完成',declined:'已拒絕',cancelled:'已取消',void:'已失效'};
+const ACTIVE_STATUSES = ['pending','negotiating'];
+const PRICE_MSG = '本站為純交換，不可標示價格或金錢';
+const PRICE_RE = /[$＄]|(^|[^A-Za-z])NT(?=[\s\d])|元|售|賣|收購|價|錢|匯款|轉帳/i;
+
+function nowTs(){ return Date.now(); }
+function fail(error){ return {ok:false, error}; }
+function byId(list, id){ return list.find(x => x.id === id) || null; }
+function newId(state, prefix){ state.meta.seq += 1; return prefix + state.meta.seq; }
+function hasPriceWords(text){ return PRICE_RE.test(text || ''); }
+function getUser(state, id){ return byId(state.users, id); }
+
+function cardLabel(c){ return c.member + '｜' + c.album + '｜' + c.version; }
+function wantLabel(w){ return w.member + '｜' + (w.album === ANY ? '專輯不限' : w.album) + '｜' + (w.version === ANY ? '版本不限' : w.version); }
+function tradeItems(t){ return t.giveItems.concat(t.getItems); }
+
+// ---------- 符合與指派 ----------
+function cardMatchesWant(card, want){
+  if (card.member !== want.member) return false;
+  if (want.album !== ANY && want.album !== card.album) return false;
+  if (want.version !== ANY && want.version !== card.version) return false;
+  return true;
+}
+function wantSpecificity(w){ return (w.album === ANY ? 1 : 0) + (w.version === ANY ? 1 : 0); }
+// 數字越小越優先：優先順序高者先，同順位時較具體者先
+function wantRank(w){ return (4 - w.priority) * 10 + wantSpecificity(w); }
+function sortWantsByPreference(wants){
+  return wants.slice().sort((a, b) => wantRank(a) - wantRank(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+// 把每張卡指派給不同的想要項（二分圖配對，Kuhn 演算法；每張卡先嘗試最優先的想要項）
+function assignCardsToWants(cards, wants){
+  const ws = sortWantsByPreference(wants);
+  const owner = new Map(); // wantId -> card
+  function place(card, seen){
+    for (const w of ws){
+      if (seen.has(w.id) || !cardMatchesWant(card, w)) continue;
+      seen.add(w.id);
+      const cur = owner.get(w.id);
+      if (!cur || place(cur, seen)){ owner.set(w.id, card); return true; }
+    }
+    return false;
+  }
+  const failed = [];
+  for (const c of cards){ if (!place(c, new Set())) failed.push(c); }
+  const cardToWant = new Map();
+  for (const [wid, c] of owner) cardToWant.set(c.id, wid);
+  return {size: owner.size, matchW: owner, cardToWant, complete: failed.length === 0, failed};
+}
+
+// ---------- 查詢 ----------
+function cardsOf(state, uid, status){ return state.cards.filter(c => c.ownerId === uid && (!status || c.status === status)); }
+function wantsOf(state, uid, status){ return state.wants.filter(w => w.ownerId === uid && (!status || w.status === status)); }
+function activeTradeBetween(state, a, b){
+  return state.trades.find(t => ACTIVE_STATUSES.includes(t.status) &&
+    ((t.fromUserId === a && t.toUserId === b) || (t.fromUserId === b && t.toUserId === a))) || null;
+}
+function findMatches(state, meId){
+  const myWants = wantsOf(state, meId, 'open');
+  const myCards = cardsOf(state, meId, 'available');
+  const out = [];
+  for (const u of state.users){
+    if (u.id === meId) continue;
+    const theirCards = cardsOf(state, u.id, 'available');
+    const theirWants = wantsOf(state, u.id, 'open');
+    const getCards = theirCards.filter(c => myWants.some(w => cardMatchesWant(c, w)));
+    const giveCards = myCards.filter(c => theirWants.some(w => cardMatchesWant(c, w)));
+    if (!getCards.length || !giveCards.length) continue;
+    const k = Math.min(assignCardsToWants(getCards, myWants).size, assignCardsToWants(giveCards, theirWants).size);
+    if (k < 1) continue;
+    const score =
+      myWants.filter(w => theirCards.some(c => cardMatchesWant(c, w))).reduce((s, w) => s + w.priority, 0) +
+      theirWants.filter(w => myCards.some(c => cardMatchesWant(c, w))).reduce((s, w) => s + w.priority, 0);
+    out.push({userId: u.id, getCards, giveCards, k, score, activeTrade: activeTradeBetween(state, meId, u.id)});
+  }
+  out.sort((a, b) => b.score - a.score || b.k - a.k || (a.userId < b.userId ? -1 : 1));
+  return out;
+}
+function pendingCount(state, uid){
+  return state.trades.filter(t =>
+    (t.status === 'pending' && t.toUserId === uid) ||
+    (t.status === 'negotiating' && ((t.fromUserId === uid && !t.doneByFrom) || (t.toUserId === uid && !t.doneByTo)))).length;
+}
+
+// ---------- 提案 ----------
+function planProposal(state, fromId, toId, giveIds, getIds){
+  if (fromId === toId) return fail('不能和自己交換');
+  if (!getUser(state, fromId) || !getUser(state, toId)) return fail('找不到使用者');
+  if (!giveIds.length || giveIds.length !== getIds.length) return fail('兩邊張數必須相同，且至少 1 張');
+  if (new Set(giveIds).size !== giveIds.length || new Set(getIds).size !== getIds.length) return fail('同一張卡不能重複選取');
+  if (activeTradeBetween(state, fromId, toId)) return fail('你們之間已有進行中的交換');
+  const giveCards = giveIds.map(id => byId(state.cards, id));
+  const getCards = getIds.map(id => byId(state.cards, id));
+  if (giveCards.some(c => !c || c.ownerId !== fromId) || getCards.some(c => !c || c.ownerId !== toId)) return fail('卡片不存在或不屬於正確的人');
+  if (giveCards.concat(getCards).some(c => c.status !== 'available')) return fail('有卡片目前不可交換');
+  const a1 = assignCardsToWants(giveCards, wantsOf(state, toId, 'open'));
+  if (!a1.complete) return fail('「我給的」有卡片不符合對方的想要項，或多張卡對應到同一個想要項');
+  const a2 = assignCardsToWants(getCards, wantsOf(state, fromId, 'open'));
+  if (!a2.complete) return fail('「我要的」有卡片不符合你的想要項，或多張卡對應到同一個想要項');
+  return {
+    ok: true,
+    giveItems: giveCards.map(c => ({cardId: c.id, wantId: a1.cardToWant.get(c.id), label: cardLabel(c)})),
+    getItems: getCards.map(c => ({cardId: c.id, wantId: a2.cardToWant.get(c.id), label: cardLabel(c)}))
+  };
+}
+function proposeTrade(state, fromId, toId, giveIds, getIds, ack){
+  if (!ack) return fail('請勾選「純交換，不涉及金錢」聲明');
+  const plan = planProposal(state, fromId, toId, giveIds, getIds);
+  if (!plan.ok) return plan;
+  const t = {
+    id: newId(state, 't'), fromUserId: fromId, toUserId: toId,
+    giveItems: plan.giveItems, getItems: plan.getItems,
+    status: 'pending', voidReason: '', noMoneyAck: true,
+    doneByFrom: false, doneByTo: false, createdAt: nowTs(), updatedAt: nowTs()
+  };
+  state.trades.push(t);
+  sweep(state);
+  return {ok: true, trade: t};
+}
+
+// 待回覆提案的有效性；有效回傳 null，否則回傳失效原因
+function tradeInvalidReason(state, t){
+  const check = (item, cardOwner, wantOwner) => {
+    const c = byId(state.cards, item.cardId);
+    if (!c || c.ownerId !== cardOwner) return '卡片已被刪除';
+    if (c.status === 'locked') return '卡片已進入其他交換';
+    if (c.status === 'traded') return '卡片已交換出去';
+    const w = byId(state.wants, item.wantId);
+    if (!w || w.ownerId !== wantOwner) return '想要項已被刪除';
+    if (w.status === 'locked') return '想要項已進入其他交換';
+    if (w.status === 'fulfilled') return '想要項已經達成';
+    if (!cardMatchesWant(c, w)) return '卡片或想要項已被修改，不再符合';
+    return null;
+  };
+  for (const it of t.giveItems){ const r = check(it, t.fromUserId, t.toUserId); if (r) return r; }
+  for (const it of t.getItems){ const r = check(it, t.toUserId, t.fromUserId); if (r) return r; }
+  return null;
+}
+// 每次資料寫入後，讓所有失去有效性的待回覆提案立即失效
+function sweep(state){
+  let changed = 0;
+  for (const t of state.trades){
+    if (t.status !== 'pending') continue;
+    const r = tradeInvalidReason(state, t);
+    if (r){ t.status = 'void'; t.voidReason = r; t.updatedAt = nowTs(); changed++; }
+  }
+  return changed;
+}
+function acceptTrade(state, tradeId, userId, ack){
+  const t = byId(state.trades, tradeId);
+  if (!t) return fail('找不到這筆交換');
+  if (t.toUserId !== userId) return fail('只有收到提案的人可以接受');
+  if (t.status !== 'pending') return fail('這筆提案已不是「待回覆」狀態');
+  if (!ack) return fail('請勾選「純交換，不涉及金錢」聲明');
+  const reason = tradeInvalidReason(state, t);
+  if (reason){
+    t.status = 'void'; t.voidReason = reason; t.updatedAt = nowTs();
+    return {ok: false, changed: true, voided: true, error: '這筆提案已失效：' + reason};
+  }
+  for (const it of tradeItems(t)){
+    byId(state.cards, it.cardId).status = 'locked';
+    byId(state.wants, it.wantId).status = 'locked';
+  }
+  t.status = 'negotiating'; t.updatedAt = nowTs();
+  sweep(state);
+  return {ok: true};
+}
+function declineTrade(state, tradeId, userId){
+  const t = byId(state.trades, tradeId);
+  if (!t || t.toUserId !== userId || t.status !== 'pending') return fail('無法拒絕這筆提案');
+  t.status = 'declined'; t.updatedAt = nowTs();
+  return {ok: true};
+}
+function unlockItems(state, t){
+  for (const it of tradeItems(t)){
+    const c = byId(state.cards, it.cardId); if (c && c.status === 'locked') c.status = 'available';
+    const w = byId(state.wants, it.wantId); if (w && w.status === 'locked') w.status = 'open';
+  }
+}
+function cancelTrade(state, tradeId, userId){
+  const t = byId(state.trades, tradeId);
+  if (!t) return fail('找不到這筆交換');
+  const isFrom = t.fromUserId === userId, isTo = t.toUserId === userId;
+  if (t.status === 'pending'){
+    if (!isFrom) return fail('待回覆的提案只有提出者可以取消（對方可選擇拒絕）');
+    t.status = 'cancelled'; t.updatedAt = nowTs();
+    return {ok: true};
+  }
+  if (t.status === 'negotiating'){
+    if (!isFrom && !isTo) return fail('你不是這筆交換的參與者');
+    const otherDone = isFrom ? t.doneByTo : t.doneByFrom;
+    unlockItems(state, t);
+    t.status = 'cancelled'; t.updatedAt = nowTs();
+    return {ok: true, otherWasDone: otherDone};
+  }
+  return fail('這筆交換已結束，無法取消');
+}
+function markDone(state, tradeId, userId){
+  const t = byId(state.trades, tradeId);
+  if (!t || t.status !== 'negotiating') return fail('這筆交換不在洽談中');
+  if (t.fromUserId === userId) t.doneByFrom = true;
+  else if (t.toUserId === userId) t.doneByTo = true;
+  else return fail('你不是這筆交換的參與者');
+  t.updatedAt = nowTs();
+  if (t.doneByFrom && t.doneByTo){
+    for (const it of tradeItems(t)){
+      const c = byId(state.cards, it.cardId); if (c) c.status = 'traded';
+      const w = byId(state.wants, it.wantId); if (w) w.status = 'fulfilled';
+    }
+    t.status = 'completed';
+  }
+  sweep(state);
+  return {ok: true, completed: t.status === 'completed'};
+}
+
+// ---------- 卡片與想要項 ----------
+function normalizeCardFields(f){
+  const v = {member: f.member, album: String(f.album || '').trim(), version: f.version, condition: f.condition, note: String(f.note || '').trim()};
+  if (!MEMBERS.includes(v.member)) return fail('請選擇成員');
+  if (!v.album || v.album === ANY) return fail('請選擇或填寫專輯');
+  if (v.album.length > 40) return fail('專輯名稱太長（最多 40 字）');
+  if (!VERSIONS.includes(v.version)) return fail('請選擇版本');
+  if (!CONDITIONS.includes(v.condition)) return fail('請選擇卡況');
+  if (v.note.length > 100) return fail('備註太長（最多 100 字）');
+  if (hasPriceWords(v.note)) return fail(PRICE_MSG);
+  return {ok: true, value: v};
+}
+function normalizeWantFields(f){
+  const v = {member: f.member, album: String(f.album == null ? '' : f.album).trim(), version: f.version, priority: Number(f.priority)};
+  if (!MEMBERS.includes(v.member)) return fail('請選擇成員');
+  if (!v.album) return fail('請選擇或填寫專輯');
+  if (v.album.length > 40) return fail('專輯名稱太長（最多 40 字）');
+  if (v.album === ANY) v.version = ANY;
+  else if (v.version !== ANY && !VERSIONS.includes(v.version)) return fail('請選擇版本');
+  if (![1, 2, 3].includes(v.priority)) return fail('請選擇優先順序');
+  return {ok: true, value: v};
+}
+function editBlockReason(state, kind, item){
+  if (item.status === 'locked') return '洽談中的項目不能修改，請先取消交換';
+  if (item.status === 'traded' || item.status === 'fulfilled') return '已完成的項目不能修改';
+  const key = kind === 'card' ? 'cardId' : 'wantId';
+  const list = kind === 'card' ? 'giveItems' : 'getItems';
+  const t = state.trades.find(x => x.status === 'pending' && x.fromUserId === item.ownerId && x[list].some(i => i[key] === item.id));
+  return t ? '這個項目被你送出的待回覆提案使用，請先取消提案' : null;
+}
+function pruneImages(state){
+  const used = new Set(state.cards.map(c => c.imageId).filter(Boolean));
+  state.images = state.images.filter(i => used.has(i.id));
+}
+function addCards(state, ownerId, fields, qty, imageData){
+  if (!getUser(state, ownerId)) return fail('找不到使用者');
+  const q = Math.floor(Number(qty));
+  if (!(q >= 1 && q <= 10)) return fail('張數需介於 1 到 10');
+  const n = normalizeCardFields(fields);
+  if (!n.ok) return n;
+  let imageId = null;
+  if (imageData){ imageId = newId(state, 'img'); state.images.push({id: imageId, data: imageData}); }
+  const ids = [];
+  for (let i = 0; i < q; i++){
+    const c = Object.assign({id: newId(state, 'c'), ownerId, imageId, status: 'available', createdAt: nowTs()}, n.value);
+    state.cards.push(c); ids.push(c.id);
+  }
+  sweep(state);
+  return {ok: true, ids};
+}
+// imageData：undefined=維持原圖、null=移除、字串=換新圖
+function updateCard(state, id, ownerId, fields, imageData){
+  const c = byId(state.cards, id);
+  if (!c || c.ownerId !== ownerId) return fail('找不到這張卡');
+  const block = editBlockReason(state, 'card', c);
+  if (block) return fail(block);
+  const n = normalizeCardFields(fields);
+  if (!n.ok) return n;
+  Object.assign(c, n.value);
+  if (imageData === null) c.imageId = null;
+  else if (typeof imageData === 'string'){ const iid = newId(state, 'img'); state.images.push({id: iid, data: imageData}); c.imageId = iid; }
+  pruneImages(state); sweep(state);
+  return {ok: true};
+}
+function removeCard(state, id, ownerId){
+  const c = byId(state.cards, id);
+  if (!c || c.ownerId !== ownerId) return fail('找不到這張卡');
+  const block = editBlockReason(state, 'card', c);
+  if (block) return fail(block);
+  state.cards = state.cards.filter(x => x.id !== id);
+  pruneImages(state); sweep(state);
+  return {ok: true};
+}
+function addWant(state, ownerId, fields){
+  if (!getUser(state, ownerId)) return fail('找不到使用者');
+  const n = normalizeWantFields(fields);
+  if (!n.ok) return n;
+  const w = Object.assign({id: newId(state, 'w'), ownerId, status: 'open', createdAt: nowTs()}, n.value);
+  state.wants.push(w);
+  sweep(state);
+  return {ok: true, id: w.id};
+}
+function updateWant(state, id, ownerId, fields){
+  const w = byId(state.wants, id);
+  if (!w || w.ownerId !== ownerId) return fail('找不到這個想要項');
+  const block = editBlockReason(state, 'want', w);
+  if (block) return fail(block);
+  const n = normalizeWantFields(fields);
+  if (!n.ok) return n;
+  Object.assign(w, n.value);
+  sweep(state);
+  return {ok: true};
+}
+function removeWant(state, id, ownerId){
+  const w = byId(state.wants, id);
+  if (!w || w.ownerId !== ownerId) return fail('找不到這個想要項');
+  const block = editBlockReason(state, 'want', w);
+  if (block) return fail(block);
+  state.wants = state.wants.filter(x => x.id !== id);
+  sweep(state);
+  return {ok: true};
+}
+
+// ---------- 使用者 ----------
+function normalizeUserFields(f){
+  const v = {nickname: String(f.nickname || '').trim(), contactType: f.contactType, contactValue: String(f.contactValue || '').trim()};
+  if (!v.nickname) return fail('請填寫暱稱');
+  if (v.nickname.length > 20) return fail('暱稱最多 20 字');
+  if (!CONTACT_TYPES.includes(v.contactType)) return fail('請選擇聯絡方式類型');
+  if (!v.contactValue) return fail('請填寫聯絡帳號');
+  if (v.contactValue.length > 50) return fail('聯絡帳號最多 50 字');
+  return {ok: true, value: v};
+}
+function createUser(state, fields){
+  const n = normalizeUserFields(fields);
+  if (!n.ok) return n;
+  const u = Object.assign({id: newId(state, 'u'), isSample: false}, n.value);
+  state.users.push(u);
+  state.meta.currentUserId = u.id;
+  return {ok: true, id: u.id};
+}
+function updateUser(state, id, fields){
+  const u = getUser(state, id);
+  if (!u) return fail('找不到使用者');
+  const n = normalizeUserFields(fields);
+  if (!n.ok) return n;
+  Object.assign(u, n.value);
+  return {ok: true};
+}
+function setCurrentUser(state, id){
+  if (id !== null && !getUser(state, id)) return fail('找不到使用者');
+  state.meta.currentUserId = id;
+  return {ok: true};
+}
+
+// ---------- 一致性檢查與載入 ----------
+function checkInvariants(s){
+  const problems = [];
+  const ids = new Set();
+  for (const list of [s.users, s.cards, s.wants, s.images, s.trades]){
+    for (const x of list){ if (ids.has(x.id)) problems.push('重複的 id：' + x.id); ids.add(x.id); }
+  }
+  for (const c of s.cards){
+    if (!byId(s.users, c.ownerId)) problems.push('卡片 ' + c.id + ' 的擁有者不存在');
+    if (c.imageId && !byId(s.images, c.imageId)) problems.push('卡片 ' + c.id + ' 的圖片不存在');
+    if (!['available', 'locked', 'traded'].includes(c.status)) problems.push('卡片 ' + c.id + ' 狀態不合法');
+  }
+  for (const w of s.wants){
+    if (!byId(s.users, w.ownerId)) problems.push('想要項 ' + w.id + ' 的擁有者不存在');
+    if (!['open', 'locked', 'fulfilled'].includes(w.status)) problems.push('想要項 ' + w.id + ' 狀態不合法');
+    if (![1, 2, 3].includes(w.priority)) problems.push('想要項 ' + w.id + ' 優先順序不合法');
+    if (w.album === ANY && w.version !== ANY) problems.push('想要項 ' + w.id + ' 專輯不限時版本也必須不限');
+  }
+  const cardRefs = new Map(), wantRefs = new Map(), pairs = new Set();
+  for (const t of s.trades){
+    if (!byId(s.users, t.fromUserId) || !byId(s.users, t.toUserId)) problems.push('交換 ' + t.id + ' 的使用者不存在');
+    if (!t.giveItems.length || t.giveItems.length !== t.getItems.length) problems.push('交換 ' + t.id + ' 兩邊張數不一致');
+    if (!Object.keys(TRADE_STATUS_LABEL).includes(t.status)) problems.push('交換 ' + t.id + ' 狀態不合法');
+    if (t.status === 'pending'){
+      const r = tradeInvalidReason(s, t);
+      if (r) problems.push('待回覆提案 ' + t.id + ' 已無效：' + r);
+    }
+    if (t.status === 'negotiating'){
+      for (const it of tradeItems(t)){
+        const c = byId(s.cards, it.cardId), w = byId(s.wants, it.wantId);
+        if (!c || c.status !== 'locked') problems.push('洽談中交換 ' + t.id + ' 的卡片未鎖定');
+        if (!w || w.status !== 'locked') problems.push('洽談中交換 ' + t.id + ' 的想要項未鎖定');
+        cardRefs.set(it.cardId, (cardRefs.get(it.cardId) || 0) + 1);
+        wantRefs.set(it.wantId, (wantRefs.get(it.wantId) || 0) + 1);
+      }
+    }
+    if (t.status === 'completed'){
+      for (const it of tradeItems(t)){
+        const c = byId(s.cards, it.cardId), w = byId(s.wants, it.wantId);
+        if (c && c.status !== 'traded') problems.push('已完成交換 ' + t.id + ' 的卡片未標為已交換');
+        if (w && w.status !== 'fulfilled') problems.push('已完成交換 ' + t.id + ' 的想要項未標為已達成');
+      }
+    }
+    if (ACTIVE_STATUSES.includes(t.status)){
+      const key = [t.fromUserId, t.toUserId].sort().join('|');
+      if (pairs.has(key)) problems.push('同一對使用者有多筆進行中的交換：' + key);
+      pairs.add(key);
+    }
+  }
+  for (const c of s.cards) if (c.status === 'locked' && cardRefs.get(c.id) !== 1) problems.push('鎖定的卡片 ' + c.id + ' 沒有恰好對應一筆洽談中交換');
+  for (const w of s.wants) if (w.status === 'locked' && wantRefs.get(w.id) !== 1) problems.push('鎖定的想要項 ' + w.id + ' 沒有恰好對應一筆洽談中交換');
+  return problems;
+}
+function parseStored(text){
+  let s;
+  try { s = JSON.parse(text); } catch (e){ return {state: null, problem: 'corrupt'}; }
+  if (!s || typeof s !== 'object' || !s.meta || !['users', 'cards', 'wants', 'images', 'trades'].every(k => Array.isArray(s[k]))) return {state: null, problem: 'corrupt'};
+  if (s.meta.schemaVersion !== SCHEMA_VERSION) return {state: null, problem: 'version'};
+  let problems;
+  try { problems = checkInvariants(s); } catch (e){ problems = ['檢查時發生例外']; }
+  if (problems.length) return {state: null, problem: 'corrupt', details: problems};
+  return {state: s, problem: null};
+}
+
+// ---------- 範例資料（情境設計見規格書第 8 節）----------
+function buildSeed(now){
+  const s = {meta: {currentUserId: null, schemaVersion: SCHEMA_VERSION, seq: 1000}, users: [], cards: [], wants: [], images: [], trades: []};
+  const HOUR = 3600000;
+  let clock = now - 30 * 24 * HOUR;
+  const tick = () => (clock += 5 * HOUR);
+  const U = (id, nickname, contactType, contactValue) => s.users.push({id, nickname, contactType, contactValue, isSample: true});
+  const C = (id, ownerId, member, album, version, condition, note, status) =>
+    s.cards.push({id, ownerId, member, album, version, condition, note: note || '', imageId: null, status: status || 'available', createdAt: tick()});
+  const W = (id, ownerId, member, album, version, priority, status) =>
+    s.wants.push({id, ownerId, member, album, version, priority, status: status || 'open', createdAt: tick()});
+  const item = (cardId, wantId) => {
+    const c = byId(s.cards, cardId);
+    return {cardId, wantId, label: cardLabel(c)};
+  };
+  const T = (id, from, to, give, get, status, extra) => s.trades.push(Object.assign({
+    id, fromUserId: from, toUserId: to, giveItems: give.map(g => item(g[0], g[1])), getItems: get.map(g => item(g[0], g[1])),
+    status, voidReason: '', noMoneyAck: true, doneByFrom: false, doneByTo: false, createdAt: tick(), updatedAt: clock
+  }, extra || {}));
+
+  // 示範帳號
+  U('u_demo', '示範小卡友', 'IG', '@carat_demo');
+  C('c_d1', 'u_demo', 'Mingyu', 'Face the Sun', 'A 版', '全新', '角落無壓痕');
+  C('c_d2', 'u_demo', 'Hoshi', 'Attacca', 'B 版', '良好');
+  C('c_d3', 'u_demo', 'Woozi', 'Attacca', 'Weverse 版', '全新');
+  C('c_d4', 'u_demo', 'Jun', 'Your Choice', 'A 版', '良好');
+  C('c_d5', 'u_demo', 'Dino', 'An Ode', 'A 版', '全新');
+  C('c_d6', 'u_demo', 'Vernon', 'FML', 'Carat 版', '良好', '附卡套保存');
+  C('c_d7', 'u_demo', 'S.Coups', 'Face the Sun', 'B 版', '有使用痕跡', '邊角有輕微壓痕');
+  C('c_d8', 'u_demo', 'The8', 'FML', 'B 版', '良好');
+  C('c_d9', 'u_demo', 'Hoshi', 'FML', 'A 版', '良好', '', 'traded');
+  W('w_d1', 'u_demo', 'Seungkwan', 'Face the Sun', 'A 版', 3);
+  W('w_d2', 'u_demo', 'DK', 'Attacca', 'A 版', 3);
+  W('w_d3', 'u_demo', 'Wonwoo', 'Attacca', ANY, 2);
+  W('w_d4', 'u_demo', 'The8', ANY, ANY, 2);
+  W('w_d5', 'u_demo', 'Joshua', 'Heng:garae', ANY, 2);
+  W('w_d6', 'u_demo', 'Dino', '17 Is Right Here', ANY, 1);
+  W('w_d7', 'u_demo', 'Vernon', 'Face the Sun', 'Weverse 版', 2);
+  W('w_d8', 'u_demo', 'Mingyu', 'Sector 17', 'A 版', 3, 'fulfilled');
+
+  // 情境 1：1 換 1
+  U('u1', '小夏', 'IG', '@xiaxia_svt');
+  C('c_u1a', 'u1', 'Seungkwan', 'Face the Sun', 'A 版', '全新');
+  C('c_u1b', 'u1', 'Vernon', 'Attacca', 'A 版', '良好');
+  C('c_u1c', 'u1', 'S.Coups', 'Your Choice', 'A 版', '良好');
+  W('w_u1a', 'u1', 'Mingyu', 'Face the Sun', 'A 版', 3);
+  W('w_u1b', 'u1', 'Jeonghan', 'Your Choice', 'B 版', 2);
+  // 情境 2：2 換 2
+  U('u2', '阿澈', 'LINE', 'acheng17');
+  C('c_u2a', 'u2', 'DK', 'Attacca', 'A 版', '全新');
+  C('c_u2b', 'u2', 'Wonwoo', 'Attacca', 'B 版', '良好');
+  C('c_u2c', 'u2', 'Mingyu', 'An Ode', 'A 版', '良好');
+  W('w_u2a', 'u2', 'Hoshi', 'Attacca', 'B 版', 3);
+  W('w_u2b', 'u2', 'Woozi', 'Attacca', 'Weverse 版', 3);
+  W('w_u2c', 'u2', 'S.Coups', 'FML', 'A 版', 1);
+  // 情境 3：想要項使用「不限」
+  U('u3', 'Carat_Mia', 'IG', '@carat_mia');
+  C('c_u3a', 'u3', 'The8', 'Sector 17', 'B 版', '全新');
+  C('c_u3b', 'u3', 'Dino', 'FML', 'Weverse 版', '良好');
+  W('w_u3a', 'u3', 'Jun', 'Your Choice', ANY, 3);
+  W('w_u3b', 'u3', 'Wonwoo', 'An Ode', 'A 版', 1);
+  // 情境 4：單向不成立（對方想要示範帳號的卡，但示範帳號不想要對方的任何卡）
+  U('u4', '辰辰', 'Dcard', 'chenchen_17');
+  C('c_u4a', 'u4', 'Jeonghan', 'Attacca', 'A 版', '良好');
+  C('c_u4b', 'u4', 'Mingyu', 'FML', 'B 版', '全新');
+  W('w_u4a', 'u4', 'Dino', 'An Ode', 'A 版', 3);
+  // 情境 5：搶同一張卡（u5、u6 都要 c_d6，並都用 w_d5）
+  U('u5', '星星糖', 'FB', 'star.candy');
+  C('c_u5a', 'u5', 'Joshua', 'Heng:garae', 'A 版', '良好');
+  C('c_u5b', 'u5', 'Hoshi', 'Sector 17', 'A 版', '全新');
+  W('w_u5a', 'u5', 'Vernon', 'FML', 'Carat 版', 3);
+  U('u6', 'Hoshi控', 'IG', '@hoshi_lover');
+  C('c_u6a', 'u6', 'Joshua', 'Heng:garae', 'B 版', '全新');
+  C('c_u6b', 'u6', 'Hoshi', 'Sector 17', 'B 版', '良好');
+  W('w_u6a', 'u6', 'Vernon', 'FML', 'Carat 版', 3);
+  W('w_u6b', 'u6', 'Jun', 'Sector 17', 'A 版', 1);
+  T('t_p1', 'u5', 'u_demo', [['c_u5a', 'w_d5']], [['c_d6', 'w_u5a']], 'pending');
+  T('t_p2', 'u6', 'u_demo', [['c_u6a', 'w_d5']], [['c_d6', 'w_u6a']], 'pending');
+  // 歷史紀錄：示範帳號與 u9 已完成一筆、與 u11 被拒絕一筆
+  U('u9', '米克', 'IG', '@mikku_svt');
+  C('c_u9a', 'u9', 'Mingyu', 'Sector 17', 'A 版', '良好', '', 'traded');
+  C('c_u9b', 'u9', 'Hoshi', 'FML', 'B 版', '良好');
+  C('c_u9c', 'u9', 'Jeonghan', 'Heng:garae', 'A 版', '全新');
+  W('w_u9a', 'u9', 'Hoshi', 'FML', 'A 版', 2, 'fulfilled');
+  W('w_u9b', 'u9', 'Seungkwan', 'Sector 17', ANY, 2);
+  W('w_u9c', 'u9', 'Jeonghan', 'An Ode', ANY, 1);
+  U('u11', '阿崴', 'LINE', 'awei_17');
+  C('c_u11a', 'u11', 'Vernon', 'Face the Sun', 'Weverse 版', '全新');
+  C('c_u11b', 'u11', 'Mingyu', 'Attacca', 'B 版', '良好');
+  C('c_u11c', 'u11', 'Woozi', 'Sector 17', 'A 版', '良好');
+  W('w_u11a', 'u11', 'Hoshi', 'An Ode', 'A 版', 2);
+  W('w_u11b', 'u11', 'The8', 'FML', 'B 版', 3);
+  T('t_done', 'u_demo', 'u9', [['c_d9', 'w_u9a']], [['c_u9a', 'w_d8']], 'completed', {doneByFrom: true, doneByTo: true});
+  T('t_decl', 'u_demo', 'u11', [['c_d8', 'w_u11b']], [['c_u11a', 'w_d7']], 'declined');
+  // 其他市集與許願牆的熱鬧程度（不與示範帳號配對）
+  U('u7', '柚子', 'LINE', 'yuzu17');
+  C('c_u7a', 'u7', 'Woozi', 'FML', 'A 版', '良好');
+  C('c_u7b', 'u7', 'Vernon', '17 Is Right Here', 'B 版', '全新');
+  C('c_u7c', 'u7', 'Jeonghan', 'Sector 17', 'A 版', '良好');
+  W('w_u7a', 'u7', 'Woozi', 'Your Choice', 'A 版', 2);
+  W('w_u7b', 'u7', 'Seungkwan', 'Heng:garae', ANY, 1);
+  U('u8', '17號出口', 'Dcard', '17exit');
+  C('c_u8a', 'u8', 'Seungkwan', 'Attacca', 'B 版', '全新');
+  C('c_u8b', 'u8', 'DK', 'FML', 'Carat 版', '良好');
+  C('c_u8c', 'u8', 'Wonwoo', 'Sector 17', 'B 版', '良好');
+  W('w_u8a', 'u8', 'Jun', 'FML', 'A 版', 2);
+  W('w_u8b', 'u8', 'Dino', 'Attacca', 'B 版', 2);
+  U('u10', '小金', 'FB', 'xiaojin17');
+  C('c_u10a', 'u10', 'Joshua', 'Attacca', 'A 版', '良好');
+  C('c_u10b', 'u10', 'Jun', 'An Ode', 'B 版', '全新');
+  C('c_u10c', 'u10', 'Dino', 'Your Choice', 'B 版', '良好');
+  W('w_u10a', 'u10', 'Woozi', 'Face the Sun', 'A 版', 2);
+  W('w_u10b', 'u10', 'S.Coups', 'Attacca', ANY, 2);
+  U('u12', 'Dcard仔', 'Dcard', 'dcard_carat');
+  C('c_u12a', 'u12', 'Joshua', 'Your Choice', 'B 版', '良好');
+  C('c_u12b', 'u12', 'Seungkwan', 'FML', 'A 版', '全新');
+  C('c_u12c', 'u12', 'Jeonghan', 'Face the Sun', 'B 版', '良好');
+  W('w_u12a', 'u12', 'Dino', 'Attacca', 'A 版', 2);
+  W('w_u12b', 'u12', 'Hoshi', 'Your Choice', ANY, 1);
+  return s;
+}
+
+const LOGIC = {
+  MEMBERS, ALBUMS, VERSIONS, CONDITIONS, CONTACT_TYPES, ANY, SCHEMA_VERSION, STORAGE_KEY,
+  hasPriceWords, cardMatchesWant, assignCardsToWants, findMatches, activeTradeBetween, pendingCount,
+  planProposal, proposeTrade, tradeInvalidReason, sweep, acceptTrade, declineTrade, cancelTrade, markDone,
+  addCards, updateCard, removeCard, addWant, updateWant, removeWant, editBlockReason,
+  createUser, updateUser, setCurrentUser, checkInvariants, parseStored, buildSeed, cardsOf, wantsOf, cardLabel, wantLabel
+};
+// =====================================================================
+// ==== LOGIC END ====
+// =====================================================================
+
+// ======================= 畫面層 =======================
+let state = null;
+let persistDisabled = false;
+let storageNotice = '';
+const ui = {member: '全部', fAlbum: '', fVersion: '', fCondition: '', cardsTab: 'have'};
+
+function h(tag, props, ...kids){
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})){
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden') e[k] = v;
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat(Infinity)){
+    if (k == null || k === false) continue;
+    e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  }
+  return e;
+}
+const $ = id => document.getElementById(id);
+function me(){ return state && byId(state.users, state.meta.currentUserId); }
+function nick(id){ const u = getUser(state, id); return u ? u.nickname : '（已不存在）'; }
+function fmtTime(ts){
+  const d = new Date(ts), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// ---------- 儲存 ----------
+function persist(s){
+  if (persistDisabled) return {ok: true};
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); return {ok: true}; }
+  catch (e){ return {ok: false, error: '儲存失敗：瀏覽器的儲存空間已滿，或不允許儲存。請刪除一些卡片或不附圖片後再試。'}; }
+}
+// 在複本上執行變更，成功且儲存成功才套用，避免記憶體與儲存內容不一致
+function commit(fn){
+  const draft = JSON.parse(JSON.stringify(state));
+  const res = fn(draft);
+  if (!res || (!res.ok && !res.changed)) return res || fail('操作失敗');
+  const saved = persist(draft);
+  if (!saved.ok){ toast(saved.error, 'error'); return fail(saved.error); }
+  state = draft;
+  render();
+  return res;
+}
+
+// ---------- 小工具：提示、對話框 ----------
+function toast(msg, kind){
+  const t = h('div', {class: 'toast ' + (kind || '')}, msg);
+  $('toasts').append(t);
+  setTimeout(() => t.remove(), 3800);
+}
+function openModal(title, body, opts){
+  const box = h('div', {class: 'modal-box' + (opts && opts.wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title},
+    h('div', {class: 'modal-head'}, h('h2', null, title), h('button', {class: 'icon-btn', 'aria-label': '關閉', onClick: closeModal}, '✕')),
+    h('div', {class: 'modal-body'}, body));
+  const back = h('div', {class: 'modal-back', onClick: e => { if (e.target === back) closeModal(); }}, box);
+  $('modal').replaceChildren(back);
+  document.body.classList.add('modal-open');
+}
+function closeModal(){ $('modal').replaceChildren(); document.body.classList.remove('modal-open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function openConfirm(o){
+  const ack = o.ackLabel ? h('input', {type: 'checkbox', id: 'ack'}) : null;
+  const ok = h('button', {class: 'btn ' + (o.danger ? 'danger' : 'primary'), disabled: !!o.ackLabel}, o.okLabel || '確定');
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  if (ack) ack.addEventListener('change', () => { ok.disabled = !ack.checked; });
+  ok.addEventListener('click', () => {
+    const r = o.onOk(ack ? ack.checked : true);
+    if (r && r.ok === false) err.textContent = r.error || '';
+    else closeModal();
+  });
+  openModal(o.title, h('div', null,
+    typeof o.message === 'string' ? h('p', null, o.message) : o.message,
+    ack && h('label', {class: 'checkline'}, ack, h('span', null, o.ackLabel)),
+    err,
+    h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'), ok)));
+}
+
+// ---------- 小工具：表單 ----------
+function field(label, control, hint){
+  return h('label', {class: 'field'}, h('span', {class: 'lbl'}, label), control, hint && h('small', {class: 'hint'}, hint));
+}
+function selectOf(options, value){
+  const s = h('select', null);
+  for (const o of options){
+    const opt = typeof o === 'string' ? {value: o, label: o} : o;
+    s.append(h('option', {value: opt.value}, opt.label));
+  }
+  if (value !== undefined) s.value = value;
+  return s;
+}
+function albumPicker(value, allowAny){
+  const opts = (allowAny ? [{value: ANY, label: '不限'}] : []).concat(ALBUMS.map(a => ({value: a, label: a})), [{value: '__other', label: '其他（自行填寫）'}]);
+  const known = value === ANY || ALBUMS.includes(value);
+  const initial = value == null ? (allowAny ? ANY : ALBUMS[0]) : (known ? value : '__other');
+  const sel = selectOf(opts, initial);
+  const txt = h('input', {type: 'text', maxlength: 40, placeholder: '輸入專輯名稱', 'aria-label': '其他專輯名稱', value: known || value == null ? '' : value});
+  const sync = () => { txt.hidden = sel.value !== '__other'; };
+  sel.addEventListener('change', sync); sync();
+  return {el: h('div', {class: 'stack'}, sel, txt), select: sel, get: () => sel.value === '__other' ? txt.value.trim() : sel.value};
+}
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('請選擇圖片檔'));
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const r = Math.min(1, 360 / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * r)), hh = Math.max(1, Math.round(img.height * r));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = hh;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, hh); ctx.drawImage(img, 0, 0, w, hh);
+      resolve(cv.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('無法讀取這張圖片（可能是不支援的格式）')); };
+    img.src = url;
+  });
+}
+
+// ---------- 卡面 ----------
+const faceCache = new Map();
+function xmlEsc(s){ return String(s).replace(/[<>&"']/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;'}[c])); }
+function faceSrc(c){
+  const key = c.member + '|' + c.album + '|' + c.version;
+  if (faceCache.has(key)) return faceCache.get(key);
+  const idx = Math.max(0, MEMBERS.indexOf(c.member));
+  const h1 = (idx * 27 + 330) % 360, h2 = (h1 + 45) % 360;
+  const cut = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="340" viewBox="0 0 220 340">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(' + h1 + ',70%,87%)"/><stop offset="1" stop-color="hsl(' + h2 + ',60%,76%)"/></linearGradient></defs>' +
+    '<rect width="220" height="340" fill="url(#g)"/><rect x="10" y="10" width="200" height="320" rx="10" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="2"/>' +
+    '<text x="110" y="70" text-anchor="middle" font-size="26" fill="#c9a24b" font-family="sans-serif">✦</text>' +
+    '<text x="110" y="160" text-anchor="middle" font-size="28" font-weight="700" fill="#2b2d42" font-family="sans-serif">' + xmlEsc(cut(c.member, 11)) + '</text>' +
+    '<text x="110" y="195" text-anchor="middle" font-size="15" fill="#2b2d42" font-family="sans-serif">' + xmlEsc(cut(c.album, 16)) + '</text>' +
+    '<text x="110" y="220" text-anchor="middle" font-size="14" fill="#2b2d42" fill-opacity=".75" font-family="sans-serif">' + xmlEsc(cut(c.version, 12)) + '</text>' +
+    '<text x="110" y="312" text-anchor="middle" font-size="11" fill="#2b2d42" fill-opacity=".55" font-family="sans-serif">CARATopia 示意卡面</text></svg>';
+  const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  faceCache.set(key, src);
+  return src;
+}
+function cardSrc(c){
+  const img = c.imageId && byId(state.images, c.imageId);
+  return img ? img.data : faceSrc(c);
+}
+function cardTile(c, o){
+  o = o || {};
+  const click = o.onClick;
+  const t = h('div', {
+    class: 'tile' + (o.selected ? ' selected' : '') + (click ? ' clickable' : ''),
+    tabindex: click ? '0' : null, role: click ? 'button' : null,
+    'aria-label': click ? c.member + ' ' + c.album + ' ' + c.version : null,
+    onClick: click, onKeydown: e => { if (click && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); click(); } }
+  },
+    h('img', {src: cardSrc(c), alt: c.member + ' ' + c.album + ' ' + c.version, loading: 'lazy'}),
+    h('div', {class: 'tile-info'},
+      h('strong', null, c.member), h('span', null, c.album + '・' + c.version),
+      h('small', null, c.condition + (o.owner ? '｜' + nick(c.ownerId) : '')),
+      o.showNote && c.note && h('small', {class: 'note'}, '「' + c.note + '」'),
+      o.badge && h('span', {class: 'badge ' + (o.badgeClass || '')}, o.badge)),
+    o.actions && h('div', {class: 'tile-actions'}, o.actions));
+  return t;
+}
+
+// ---------- 路由與外框 ----------
+function parseRoute(){
+  const parts = location.hash.replace(/^#\/?/, '').split('/');
+  return {name: parts[0] || 'market', arg: parts[1] || null};
+}
+function navigate(name){
+  const target = '#/' + name;
+  if (location.hash === target) render(); else location.hash = target;
+}
+window.addEventListener('hashchange', () => { closeModal(); render(); });
+
+const NAV = [['market', '🛍', '市集'], ['match', '💞', '配對'], ['cards', '🗂', '我的卡冊'], ['wall', '🌠', '許願牆'], ['trades', '🔄', '交換']];
+function shell(route, content){
+  const u = me();
+  const badge = pendingCount(state, u.id);
+  return h('div', {class: 'shell'},
+    h('header', {class: 'top'},
+      h('a', {class: 'brand', href: '#/market'}, h('span', {class: 'logo'}, '✦'), 'CARATopia', h('em', null, 'Online')),
+      h('button', {class: 'user-chip', onClick: () => navigate('settings'), 'aria-label': '目前身分：' + u.nickname + '，點擊開啟設定'},
+        h('span', {class: 'avatar'}, Array.from(u.nickname)[0]), h('span', {class: 'uname'}, u.nickname), u.isSample && h('span', {class: 'tag'}, '示範'))),
+    h('div', {class: 'banner'}, '純交換・禁止任何金錢交易　｜　本站為粉絲自製，與 SEVENTEEN、PLEDIS Entertainment 無關　｜　資料只存在你的瀏覽器'),
+    storageNotice && h('div', {class: 'banner warn'}, storageNotice),
+    h('div', {id: 'view'}, content),
+    h('nav', {class: 'bottom', 'aria-label': '主要導覽'}, h('ul', null, NAV.map(n =>
+      h('li', null, h('a', {href: '#/' + n[0], class: route.name === n[0] ? 'on' : '', 'aria-current': route.name === n[0] ? 'page' : null},
+        h('span', {class: 'ic'}, n[1]), n[2],
+        n[0] === 'trades' && badge > 0 && h('span', {class: 'dot', 'aria-label': badge + ' 件待處理'}, badge)))))));
+}
+
+function render(){
+  const app = $('app');
+  const u = me();
+  if (!u){ app.replaceChildren(viewWelcome()); return; }
+  const route = parseRoute();
+  const views = {market: viewMarket, match: viewMatch, cards: viewCards, wall: viewWall, trades: viewTrades, settings: viewSettings};
+  const view = views[route.name] || viewMarket;
+  app.replaceChildren(shell(route.name in views ? route : {name: 'market'}, view(route)));
+  if (route.name === 'match' && route.arg){
+    history.replaceState(null, '', '#/match');
+    const m = findMatches(state, u.id).find(x => x.userId === route.arg);
+    if (m && !m.activeTrade) openProposalModal(m); else toast('目前沒有可以提出的配對', 'error');
+  }
+}
+
+// ---------- 歡迎頁 ----------
+function viewWelcome(){
+  const nickIn = h('input', {type: 'text', maxlength: 20, placeholder: '例如：小夏'});
+  const ctype = selectOf(CONTACT_TYPES, 'IG');
+  const cval = h('input', {type: 'text', maxlength: 50, placeholder: '例如：@your_id'});
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  return h('main', {class: 'welcome'},
+    h('div', {class: 'hero'}, h('div', {class: 'big'}, '✦'), h('h1', null, 'CARATopia Online'),
+      h('p', {class: 'muted'}, 'SEVENTEEN 粉絲小卡純交換平台'),
+      h('p', {class: 'small muted'}, '登錄想換的卡 → 自動配對 → 雙方同意後才揭露聯絡方式。全程不涉及金錢。')),
+    h('section', {class: 'panel'}, h('h2', null, '以示範帳號體驗'),
+      h('p', {class: 'muted small'}, '已備好卡冊與數位可配對的對象，也可以切換成其他使用者，扮演交換的另一方。'),
+      h('button', {class: 'btn primary', onClick: () => commit(s => setCurrentUser(s, 'u_demo'))}, '進入示範')),
+    h('section', {class: 'panel'}, h('h2', null, '建立我的身分'),
+      field('暱稱', nickIn), field('聯絡方式類型', ctype), field('聯絡帳號', cval, '只有在雙方都同意交換後，對方才看得到。資料只存在這個瀏覽器。'), err,
+      h('button', {class: 'btn primary', onClick: () => {
+        const res = commit(s => createUser(s, {nickname: nickIn.value, contactType: ctype.value, contactValue: cval.value}));
+        if (res.ok){ location.hash = '#/cards'; toast('身分建立完成！先登錄你的卡吧', 'ok'); } else err.textContent = res.error || '';
+      }}, '建立並開始')),
+    h('p', {class: 'small muted', style: 'text-align:center'}, '本站為粉絲自製，與 SEVENTEEN、PLEDIS Entertainment 無關。'));
+}
+
+// ---------- 市集 ----------
+function viewMarket(){
+  const u = me();
+  const albums = Array.from(new Set(ALBUMS.concat(state.cards.map(c => c.album))));
+  const fAlbum = selectOf([{value: '', label: '專輯：全部'}].concat(albums.map(a => ({value: a, label: a}))), ui.fAlbum);
+  const fVer = selectOf([{value: '', label: '版本：全部'}].concat(VERSIONS.map(v => ({value: v, label: v}))), ui.fVersion);
+  const fCon = selectOf([{value: '', label: '卡況：全部'}].concat(CONDITIONS.map(v => ({value: v, label: v}))), ui.fCondition);
+  fAlbum.addEventListener('change', () => { ui.fAlbum = fAlbum.value; render(); });
+  fVer.addEventListener('change', () => { ui.fVersion = fVer.value; render(); });
+  fCon.addEventListener('change', () => { ui.fCondition = fCon.value; render(); });
+  const list = state.cards.filter(c => c.status === 'available' && c.ownerId !== u.id &&
+    (ui.member === '全部' || c.member === ui.member) && (!ui.fAlbum || c.album === ui.fAlbum) &&
+    (!ui.fVersion || c.version === ui.fVersion) && (!ui.fCondition || c.condition === ui.fCondition))
+    .sort((a, b) => b.createdAt - a.createdAt);
+  return h('div', null,
+    h('div', {class: 'page-title'}, h('h1', null, '成員市集'), h('p', null, '大家願意拿出來交換的卡（只能瀏覽，要交換請到「配對」）')),
+    h('div', {class: 'chips', role: 'tablist'}, ['全部'].concat(MEMBERS).map(m =>
+      h('button', {class: 'chip' + (ui.member === m ? ' on' : ''), role: 'tab', 'aria-selected': ui.member === m ? 'true' : 'false', onClick: () => { ui.member = m; render(); }}, m))),
+    h('div', {class: 'filters'}, fAlbum, fVer, fCon),
+    list.length ? h('div', {class: 'grid'}, list.map(c => cardTile(c, {owner: true, onClick: () => openCardDetail(c)})))
+      : h('div', {class: 'empty'}, '沒有符合條件的卡片，換個篩選看看吧。'));
+}
+function openCardDetail(c){
+  const u = me();
+  const m = findMatches(state, u.id).find(x => x.userId === c.ownerId);
+  const owner = getUser(state, c.ownerId);
+  let hint;
+  if (m && m.activeTrade) hint = h('p', {class: 'small muted'}, '你們之間已有進行中的交換，請到「交換」查看。');
+  else if (m) hint = h('p', {class: 'small', style: 'color:var(--ok)'}, '✔ 你和 ' + owner.nickname + ' 有雙向配對，可以提出交換！');
+  else hint = h('p', {class: 'small muted'}, owner.nickname + ' 目前沒有想要你持有的卡（或你還沒登錄想要的卡），所以暫時無法配對。你可以先把這張卡加入「我想要的」。');
+  openModal(c.member + '・' + c.album, h('div', null,
+    h('div', {class: 'detail-body'},
+      h('img', {class: 'detail-img', src: cardSrc(c), alt: c.member + ' ' + c.album}),
+      h('p', null, h('strong', null, c.member), '　', c.album, '・', c.version),
+      h('p', null, '卡況：', c.condition),
+      h('p', null, '持有者：', owner.nickname),
+      c.note && h('p', null, '備註：', c.note)),
+    hint,
+    h('div', {class: 'modal-foot'},
+      h('button', {class: 'btn', onClick: () => { closeModal(); openWantForm(null, {member: c.member, album: c.album, version: c.version}); }}, '加入我的想要'),
+      m && !m.activeTrade && h('button', {class: 'btn primary', onClick: () => { closeModal(); location.hash = '#/match/' + c.ownerId; }}, '前往配對'))));
+}
+
+// ---------- 配對 ----------
+function viewMatch(){
+  const u = me();
+  const myWants = wantsOf(state, u.id, 'open'), myCards = cardsOf(state, u.id, 'available');
+  const head = h('div', {class: 'page-title'}, h('h1', null, '我的配對'), h('p', null, '你有對方要的、對方也有你要的'));
+  if (!myWants.length || !myCards.length){
+    return h('div', null, head, h('div', {class: 'empty'},
+      h('p', null, '要先登錄「我有的卡」和「我想要的卡」，才能配對。'),
+      h('p', {class: 'small'}, '目前：可交換的卡 ' + myCards.length + ' 張、想要項 ' + myWants.length + ' 筆'),
+      h('div', {class: 'row', style: 'justify-content:center;margin-top:10px'},
+        h('button', {class: 'btn primary', onClick: () => { ui.cardsTab = myCards.length ? 'want' : 'have'; navigate('cards'); }}, '去登錄'),
+        h('button', {class: 'btn', onClick: () => navigate('wall')}, '逛逛許願牆'))));
+  }
+  const matches = findMatches(state, u.id);
+  if (!matches.length){
+    return h('div', null, head, h('div', {class: 'empty'},
+      h('p', null, '目前沒有雙向配對。'), h('p', {class: 'small'}, '到市集看看別人有什麼卡，或把想要的卡加進清單，也可以看許願牆有沒有人要你的卡。'),
+      h('div', {class: 'row', style: 'justify-content:center;margin-top:10px'},
+        h('button', {class: 'btn', onClick: () => navigate('market')}, '去市集'), h('button', {class: 'btn', onClick: () => navigate('wall')}, '去許願牆'))));
+  }
+  return h('div', null, head, matches.map(m => {
+    const o = getUser(state, m.userId);
+    return h('section', {class: 'panel'},
+      h('div', {class: 'row between'},
+        h('h3', null, o.nickname, o.isSample && h('span', {class: 'tag', style: 'margin-left:6px'}, '示範')),
+        h('div', {class: 'row'}, h('span', {class: 'pill'}, '最多可 ' + m.k + ' 換 ' + m.k), h('span', {class: 'score', title: '配對分數'}, m.score + ' 分'))),
+      h('p', {class: 'small muted', style: 'margin-bottom:0'}, '你可以得到'),
+      h('div', {class: 'label-list'}, m.getCards.map(c => h('span', {class: 'pill'}, cardLabel(c)))),
+      h('p', {class: 'small muted', style: 'margin-bottom:0'}, '你可以給出'),
+      h('div', {class: 'label-list'}, m.giveCards.map(c => h('span', {class: 'pill rose'}, cardLabel(c)))),
+      h('div', {class: 'row', style: 'margin-top:8px'},
+        m.activeTrade
+          ? [h('span', {class: 'badge gold'}, '已有進行中交換：' + TRADE_STATUS_LABEL[m.activeTrade.status]), h('button', {class: 'btn sm', onClick: () => navigate('trades')}, '前往交換紀錄')]
+          : h('button', {class: 'btn primary', onClick: () => openProposalModal(m)}, '查看並提出交換')));
+  }));
+}
+function openProposalModal(match){
+  const u = me(), other = getUser(state, match.userId);
+  const sel = {give: new Set(), get: new Set()};
+  const gAssign = assignCardsToWants(match.getCards, wantsOf(state, u.id, 'open'));
+  const vAssign = assignCardsToWants(match.giveCards, wantsOf(state, other.id, 'open'));
+  Array.from(gAssign.matchW.values()).slice(0, match.k).forEach(c => sel.get.add(c.id));
+  Array.from(vAssign.matchW.values()).slice(0, match.k).forEach(c => sel.give.add(c.id));
+  const status = h('p', {class: 'plan-status', role: 'status'});
+  const ack = h('input', {type: 'checkbox'});
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  const submit = h('button', {class: 'btn primary', disabled: true}, '送出交換提案');
+  function refresh(){
+    const plan = planProposal(state, u.id, other.id, Array.from(sel.give), Array.from(sel.get));
+    status.className = 'plan-status ' + (plan.ok ? 'ok' : 'bad');
+    status.textContent = plan.ok ? '✔ ' + sel.give.size + ' 換 ' + sel.get.size + '，可以送出' : plan.error;
+    submit.disabled = !(plan.ok && ack.checked);
+  }
+  ack.addEventListener('change', refresh);
+  const picker = (cards, set) => h('div', {class: 'grid'}, cards.map(c => {
+    const t = cardTile(c, {selected: set.has(c.id), showNote: true, onClick: () => {
+      if (set.has(c.id)) set.delete(c.id); else set.add(c.id);
+      t.classList.toggle('selected', set.has(c.id)); refresh();
+    }});
+    return t;
+  }));
+  submit.addEventListener('click', () => {
+    const res = commit(s => proposeTrade(s, u.id, other.id, Array.from(sel.give), Array.from(sel.get), ack.checked));
+    if (res.ok){ closeModal(); toast('已送出提案，等待 ' + other.nickname + ' 回覆', 'ok'); navigate('trades'); }
+    else err.textContent = res.error || '';
+  });
+  openModal('和 ' + other.nickname + ' 交換', h('div', null,
+    h('p', {class: 'small muted'}, '兩邊要選相同張數。送出後對方回覆前，卡片都還能繼續使用；對方接受後才會鎖定。'),
+    h('div', {class: 'two-col'},
+      h('div', null, h('h3', null, '我要的（' + other.nickname + ' 的卡）'), picker(match.getCards, sel.get)),
+      h('div', null, h('h3', null, '我給的（我的卡）'), picker(match.giveCards, sel.give))),
+    status,
+    h('label', {class: 'checkline'}, ack, h('span', null, '我了解本站為純交換，本次交換不涉及任何金錢。')),
+    err,
+    h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'), submit)), {wide: true});
+  refresh();
+}
+
+// ---------- 我的卡冊 ----------
+function viewCards(){
+  const u = me();
+  const myCards = state.cards.filter(c => c.ownerId === u.id).sort((a, b) => b.createdAt - a.createdAt);
+  const myWants = state.wants.filter(w => w.ownerId === u.id).sort((a, b) => b.createdAt - a.createdAt);
+  const tab = ui.cardsTab;
+  const tabs = h('div', {class: 'chips', role: 'tablist'},
+    h('button', {class: 'chip' + (tab === 'have' ? ' on' : ''), role: 'tab', onClick: () => { ui.cardsTab = 'have'; render(); }}, '我有的（' + myCards.filter(c => c.status !== 'traded').length + '）'),
+    h('button', {class: 'chip' + (tab === 'want' ? ' on' : ''), role: 'tab', onClick: () => { ui.cardsTab = 'want'; render(); }}, '我想要的（' + myWants.filter(w => w.status !== 'fulfilled').length + '）'));
+  let body;
+  if (tab === 'have'){
+    const active = myCards.filter(c => c.status !== 'traded'), done = myCards.filter(c => c.status === 'traded');
+    body = h('div', null,
+      h('div', {class: 'row between', style: 'margin-bottom:10px'}, h('p', {class: 'muted small', style: 'margin:0'}, '這些卡會出現在市集，也用來和別人配對。'),
+        h('button', {class: 'btn primary', onClick: () => openCardForm(null)}, '＋ 新增卡片')),
+      active.length ? h('div', {class: 'grid'}, active.map(c => {
+        const block = editBlockReason(state, 'card', c);
+        return cardTile(c, {showNote: true, badge: c.status === 'locked' ? '洽談中' : null, badgeClass: 'gold', actions: [
+          h('button', {class: 'btn sm', disabled: !!block, title: block || '', onClick: () => openCardForm(c)}, '編輯'),
+          h('button', {class: 'btn sm danger', disabled: !!block, title: block || '', onClick: () => openConfirm({title: '刪除這張卡？', message: c.member + '｜' + c.album + '｜' + c.version, okLabel: '刪除', danger: true,
+            onOk: () => commit(s => removeCard(s, c.id, u.id))})}, '刪除')]});
+      })) : h('div', {class: 'empty'}, '還沒有卡片。按「新增卡片」登錄你願意拿來交換的卡。'),
+      done.length > 0 && h('details', {class: 'fold'}, h('summary', null, '已完成交換的卡（' + done.length + '）'), h('div', {class: 'grid'}, done.map(c => cardTile(c, {badge: '已交換', badgeClass: 'ok'})))));
+  } else {
+    const active = myWants.filter(w => w.status !== 'fulfilled'), done = myWants.filter(w => w.status === 'fulfilled');
+    const row = w => {
+      const block = editBlockReason(state, 'want', w);
+      return h('div', {class: 'item'},
+        h('div', null, h('strong', null, wantLabel(w)), h('div', {class: 'row'}, h('span', {class: 'badge ' + (w.priority === 3 ? 'rose' : '')}, '優先：' + PRIORITY_LABEL[w.priority]),
+          w.status === 'locked' && h('span', {class: 'badge gold'}, '洽談中'), w.status === 'fulfilled' && h('span', {class: 'badge ok'}, '已達成'))),
+        w.status !== 'fulfilled' && h('div', {class: 'row'},
+          h('button', {class: 'btn sm', disabled: !!block, title: block || '', onClick: () => openWantForm(w)}, '編輯'),
+          h('button', {class: 'btn sm danger', disabled: !!block, title: block || '', onClick: () => openConfirm({title: '刪除這個想要項？', message: wantLabel(w), okLabel: '刪除', danger: true,
+            onOk: () => commit(s => removeWant(s, w.id, u.id))})}, '刪除')));
+    };
+    body = h('div', null,
+      h('div', {class: 'row between', style: 'margin-bottom:10px'}, h('p', {class: 'muted small', style: 'margin:0'}, '專輯與版本可選「不限」。一個想要項最多換到一張卡。'),
+        h('button', {class: 'btn primary', onClick: () => openWantForm(null)}, '＋ 新增想要')),
+      active.length ? h('div', {class: 'panel'}, active.map(row)) : h('div', {class: 'empty'}, '還沒有想要的卡。按「新增想要」，或去市集、許願牆挑選。'),
+      done.length > 0 && h('details', {class: 'fold'}, h('summary', null, '已達成的想要（' + done.length + '）'), h('div', {class: 'panel'}, done.map(row))));
+  }
+  return h('div', null, h('div', {class: 'page-title'}, h('h1', null, '我的卡冊')), tabs, body);
+}
+function openCardForm(card){
+  const u = me();
+  const member = selectOf(MEMBERS, card ? card.member : MEMBERS[0]);
+  const album = albumPicker(card ? card.album : null, false);
+  const version = selectOf(VERSIONS, card ? card.version : VERSIONS[0]);
+  const cond = selectOf(CONDITIONS, card ? card.condition : CONDITIONS[1]);
+  const note = h('textarea', {maxlength: 100, placeholder: '例如：邊角無壓痕、附卡套（請勿標示價格）'}, card ? card.note : '');
+  const qty = h('input', {type: 'number', min: 1, max: 10, value: '1'});
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  const preview = h('img', {class: 'preview', alt: '卡片預覽', src: card ? cardSrc(card) : faceSrc({member: MEMBERS[0], album: ALBUMS[0], version: VERSIONS[0]})});
+  let pendingImage = undefined; // undefined=維持原圖、null=移除、字串=新圖
+  const file = h('input', {type: 'file', accept: 'image/*'});
+  file.addEventListener('change', async () => {
+    if (!file.files[0]) return;
+    try { pendingImage = await compressImage(file.files[0]); preview.src = pendingImage; err.textContent = ''; }
+    catch (e){ err.textContent = e.message; }
+  });
+  const fields = () => ({member: member.value, album: album.get(), version: version.value, condition: cond.value, note: note.value});
+  const refreshFace = () => { if (pendingImage === undefined && !(card && card.imageId)) preview.src = faceSrc({member: member.value, album: album.get() || '', version: version.value}); };
+  [member, version].forEach(e => e.addEventListener('change', refreshFace));
+  album.select.addEventListener('change', refreshFace);
+  const removeImg = card && card.imageId ? h('button', {class: 'btn sm', type: 'button', onClick: () => { pendingImage = null; preview.src = faceSrc({member: member.value, album: album.get() || '', version: version.value}); }}, '移除圖片') : null;
+  openModal(card ? '編輯卡片' : '新增我有的卡', h('div', null,
+    field('成員', member), field('專輯', album.el), field('版本', version), field('卡況', cond),
+    field('備註（選填）', note, '可寫卡況細節；不可標示價格或金錢'),
+    !card && field('張數', qty, '一次建立多張相同的卡（最多 10 張，共用同一張照片）'),
+    field('照片（選填）', h('div', {class: 'row'}, preview, h('div', {class: 'stack'}, file, removeImg)), '照片會縮小後只存在你的瀏覽器，不會上傳到任何地方。'),
+    err,
+    h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'),
+      h('button', {class: 'btn primary', onClick: () => {
+        const res = commit(s => card ? updateCard(s, card.id, u.id, fields(), pendingImage) : addCards(s, u.id, fields(), qty.value, pendingImage || null));
+        if (res.ok){ closeModal(); toast(card ? '已更新' : '已新增', 'ok'); } else err.textContent = res.error || '';
+      }}, card ? '儲存' : '新增'))));
+}
+function openWantForm(want, prefill){
+  const u = me();
+  const src = want || prefill || null;
+  const member = selectOf(MEMBERS, src ? src.member : MEMBERS[0]);
+  const album = albumPicker(src ? src.album : ANY, true);
+  const version = selectOf([{value: ANY, label: '不限'}].concat(VERSIONS.map(v => ({value: v, label: v}))), src ? src.version : ANY);
+  const prio = selectOf([{value: '3', label: '高'}, {value: '2', label: '中'}, {value: '1', label: '低'}], String(want ? want.priority : 2));
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  const syncVersion = () => { if (album.get() === ANY){ version.value = ANY; version.disabled = true; } else version.disabled = false; };
+  album.select.addEventListener('change', syncVersion); syncVersion();
+  const fields = () => ({member: member.value, album: album.get(), version: version.value, priority: prio.value});
+  const save = () => {
+    const f = fields();
+    const dup = !want && state.wants.some(w => w.ownerId === u.id && w.status === 'open' && w.member === f.member && w.album === f.album && w.version === f.version);
+    if (dup && !confirm('你已經有一筆相同的想要項，還要再新增嗎？')) return;
+    const res = commit(s => want ? updateWant(s, want.id, u.id, f) : addWant(s, u.id, f));
+    if (res.ok){ closeModal(); toast(want ? '已更新' : '已加入想要清單', 'ok'); } else err.textContent = res.error || '';
+  };
+  openModal(want ? '編輯想要的卡' : '新增我想要的卡', h('div', null,
+    field('成員', member), field('專輯', album.el, '選「不限」代表任何專輯都可以'), field('版本', version, '專輯不限時，版本也會是不限'),
+    field('優先順序', prio, '高優先的想要項會讓配對分數更高'), err,
+    h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'), h('button', {class: 'btn primary', onClick: save}, want ? '儲存' : '新增'))));
+}
+
+// ---------- 許願牆 ----------
+function viewWall(){
+  const u = me();
+  const myCards = cardsOf(state, u.id, 'available');
+  const matches = findMatches(state, u.id);
+  const wants = state.wants.filter(w => w.status === 'open' && w.ownerId !== u.id);
+  const groups = MEMBERS.map(m => [m, wants.filter(w => w.member === m)]).filter(g => g[1].length);
+  return h('div', null,
+    h('div', {class: 'page-title'}, h('h1', null, '許願牆'), h('p', null, '大家想要的卡。看到你有的，就是機會！')),
+    groups.length ? groups.map(g => h('section', {class: 'panel'}, h('h3', null, g[0]), g[1].map(w => {
+      const mine = myCards.filter(c => cardMatchesWant(c, w));
+      const m = matches.find(x => x.userId === w.ownerId);
+      return h('div', {class: 'item'},
+        h('div', null, h('strong', null, wantLabel(w)), h('div', {class: 'small muted'}, nick(w.ownerId) + '　優先：' + PRIORITY_LABEL[w.priority]),
+          mine.length > 0 && h('span', {class: 'badge ok'}, '我有這張（' + mine.length + '）')),
+        m && !m.activeTrade && h('button', {class: 'btn sm primary', onClick: () => { location.hash = '#/match/' + w.ownerId; }}, '前往配對'));
+    }))) : h('div', {class: 'empty'}, '許願牆目前是空的。'));
+}
+
+// ---------- 交換紀錄 ----------
+function viewTrades(){
+  const u = me();
+  const mine = state.trades.filter(t => t.fromUserId === u.id || t.toUserId === u.id).sort((a, b) => b.updatedAt - a.updatedAt);
+  const myDone = t => t.fromUserId === u.id ? t.doneByFrom : t.doneByTo;
+  const todo = mine.filter(t => (t.status === 'pending' && t.toUserId === u.id) || (t.status === 'negotiating' && !myDone(t)));
+  const going = mine.filter(t => ACTIVE_STATUSES.includes(t.status) && !todo.includes(t));
+  const past = mine.filter(t => !ACTIVE_STATUSES.includes(t.status));
+  const section = (title, list) => list.length > 0 && h('section', null, h('h2', null, title + '（' + list.length + '）'), list.map(tradeCard));
+  return h('div', null,
+    h('div', {class: 'page-title'}, h('h1', null, '交換紀錄'), h('p', null, '接受 = 同意進入洽談；聯絡方式在洽談中才會揭露')),
+    mine.length ? [section('待我處理', todo), section('進行中', going), section('歷史', past)]
+      : h('div', {class: 'empty'}, '還沒有任何交換。到「配對」找對象吧！'));
+}
+function tradeCard(t){
+  const u = me();
+  const iFrom = t.fromUserId === u.id;
+  const other = getUser(state, iFrom ? t.toUserId : t.fromUserId);
+  const myGive = iFrom ? t.giveItems : t.getItems, myGet = iFrom ? t.getItems : t.giveItems;
+  const meDone = iFrom ? t.doneByFrom : t.doneByTo, otherDone = iFrom ? t.doneByTo : t.doneByFrom;
+  const actions = [];
+  if (t.status === 'pending' && !iFrom){
+    actions.push(h('button', {class: 'btn primary', onClick: () => openConfirm({title: '接受這筆交換？', okLabel: '接受並進入洽談',
+      message: h('div', null, h('p', null, '接受後，雙方的卡會被鎖定，並互相看到聯絡方式；細節請自行聯絡談定。'), h('p', {class: 'small muted'}, '你給：' + myGive.map(i => i.label).join('、')), h('p', {class: 'small muted'}, '你得到：' + myGet.map(i => i.label).join('、'))),
+      ackLabel: '我了解本站為純交換，本次交換不涉及任何金錢。',
+      onOk: ack => { const r = commit(s => acceptTrade(s, t.id, u.id, ack)); if (r.ok){ toast('已進入洽談，聯絡方式已揭露', 'ok'); return r; } return fail(r.error); }})}, '接受'));
+    actions.push(h('button', {class: 'btn danger', onClick: () => openConfirm({title: '拒絕這筆提案？', message: '拒絕後不會讓對方看到你的聯絡方式。', okLabel: '拒絕', danger: true,
+      onOk: () => commit(s => declineTrade(s, t.id, u.id))})}, '拒絕'));
+  }
+  if (t.status === 'pending' && iFrom){
+    actions.push(h('button', {class: 'btn danger', onClick: () => openConfirm({title: '取消提案？', message: '取消後可以重新對同一個人提案。', okLabel: '取消提案', danger: true,
+      onOk: () => commit(s => cancelTrade(s, t.id, u.id))})}, '取消提案'));
+  }
+  if (t.status === 'negotiating'){
+    actions.push(meDone ? h('span', {class: 'badge ok'}, '你已確認完成，等待對方確認')
+      : h('button', {class: 'btn primary', onClick: () => openConfirm({title: '確認交換完成？', message: '請在你已經收到卡片後再按。雙方都按完成，這筆交換才會結案。', okLabel: '我已完成',
+        onOk: () => { const r = commit(s => markDone(s, t.id, u.id)); if (r.ok) toast(r.completed ? '交換完成！🎉' : '已確認，等待對方', 'ok'); return r; }})}, '我已完成交換'));
+    actions.push(h('button', {class: 'btn danger', onClick: () => openConfirm({title: '取消這筆交換？',
+      message: otherDone ? '對方已經確認完成了。確定要取消嗎？取消後卡片會恢復為可交換。' : '取消後卡片會恢復為可交換。',
+      okLabel: '取消交換', danger: true, onOk: () => commit(s => cancelTrade(s, t.id, u.id))})}, '取消交換'));
+  }
+  if (other.isSample && ACTIVE_STATUSES.includes(t.status)){
+    actions.push(h('button', {class: 'btn sm', title: '示範用：切換成對方，從對方立場操作', onClick: () => { commit(s => setCurrentUser(s, other.id)); toast('已切換為「' + other.nickname + '」（示範）'); }}, '以對方身分查看（示範）'));
+  }
+  return h('article', {class: 'panel trade ' + t.status},
+    h('div', {class: 'row between'},
+      h('h3', null, (iFrom ? '你 → ' : '') + other.nickname + (iFrom ? '' : ' → 你')),
+      h('span', {class: 'badge ' + ({pending: '', negotiating: 'gold', completed: 'ok', declined: 'gray', cancelled: 'gray', void: 'bad'}[t.status])}, TRADE_STATUS_LABEL[t.status])),
+    h('div', {class: 'sides'},
+      h('div', null, h('h4', null, '我給出'), h('div', {class: 'label-list'}, myGive.map(i => h('span', {class: 'pill rose'}, i.label)))),
+      h('div', null, h('h4', null, '我得到'), h('div', {class: 'label-list'}, myGet.map(i => h('span', {class: 'pill'}, i.label))))),
+    t.status === 'void' && h('p', {class: 'small', style: 'color:var(--bad)'}, '失效原因：' + t.voidReason),
+    (t.status === 'negotiating' || t.status === 'completed') && h('div', {class: 'contact'},
+      h('strong', null, other.nickname + ' 的聯絡方式：'), h('span', null, ' ' + other.contactType + '　' + other.contactValue),
+      t.status === 'negotiating' && h('ul', {class: 'guide'},
+        h('li', null, '面交：選公共場所，先確認卡況。'), h('li', null, '郵寄：建議雙方同日寄出並互傳單號，先後順序由你們協議。'),
+        h('li', null, '建議先互傳卡片實拍照。'), h('li', null, '談不攏請按「取消交換」，卡片會恢復為可交換。'))),
+    h('div', {class: 'small muted'}, '建立：' + fmtTime(t.createdAt) + '　更新：' + fmtTime(t.updatedAt)),
+    actions.length > 0 && h('div', {class: 'row', style: 'margin-top:10px'}, actions));
+}
+
+// ---------- 設定 ----------
+function viewSettings(){
+  const u = me();
+  const nickIn = h('input', {type: 'text', maxlength: 20, value: u.nickname});
+  const ctype = selectOf(CONTACT_TYPES, u.contactType);
+  const cval = h('input', {type: 'text', maxlength: 50, value: u.contactValue});
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  const who = selectOf(state.users.map(x => ({value: x.id, label: x.nickname + (x.isSample ? '（示範）' : '')})), u.id);
+  who.addEventListener('change', () => { commit(s => setCurrentUser(s, who.value)); toast('已切換身分', 'ok'); });
+  return h('div', null,
+    h('div', {class: 'page-title'}, h('h1', null, '設定')),
+    h('section', {class: 'panel'}, h('h3', null, '我的資料'),
+      field('暱稱', nickIn), field('聯絡方式類型', ctype), field('聯絡帳號', cval, '只有在洽談中才會讓交換對象看到'), err,
+      h('button', {class: 'btn primary', onClick: () => { const r = commit(s => updateUser(s, u.id, {nickname: nickIn.value, contactType: ctype.value, contactValue: cval.value})); if (r.ok) toast('已儲存', 'ok'); else err.textContent = r.error || ''; }}, '儲存')),
+    h('section', {class: 'panel'}, h('h3', null, '切換身分（示範用）'),
+      h('p', {class: 'small muted'}, '資料只存在這個瀏覽器，所以用切換身分來扮演交換的另一方。'), field('目前身分', who),
+      h('button', {class: 'btn', onClick: openNewIdentity}, '建立新的身分')),
+    h('section', {class: 'panel'}, h('h3', null, '重設資料'),
+      h('p', {class: 'small muted'}, '清除你在這個瀏覽器的所有資料（包含自己建立的身分與卡片），還原成範例資料。'),
+      h('button', {class: 'btn danger', onClick: () => openConfirm({title: '重設所有資料？', message: '這個動作無法復原。', okLabel: '確定重設', danger: true, onOk: resetAll})}, '重設資料')),
+    h('section', {class: 'panel'}, h('h3', null, '關於本站與已知限制'),
+      h('ul', {class: 'small muted', style: 'margin:0;padding-left:1.2em'},
+        h('li', null, '本站為粉絲自製，與 SEVENTEEN、PLEDIS Entertainment 無關；不使用官方圖片、Logo 或成員肖像。'),
+        h('li', null, '純交換、無金流；備註欄不可標示價格。'),
+        h('li', null, '資料與照片只存在你的瀏覽器，不同人、不同裝置之間不會共享，其他使用者為內建的虛構範例。'),
+        h('li', null, '配對只比對「成員、專輯、版本」，同款式中的不同卡面請靠備註與照片，並在洽談時確認。'),
+        h('li', null, '本站不判定卡片真偽，也不保證交換結果；沒有逾時機制。'))));
+}
+function openNewIdentity(){
+  const nickIn = h('input', {type: 'text', maxlength: 20, placeholder: '例如：小夏'});
+  const ctype = selectOf(CONTACT_TYPES, 'IG');
+  const cval = h('input', {type: 'text', maxlength: 50, placeholder: '例如：@your_id'});
+  const err = h('p', {class: 'form-error', role: 'alert'});
+  openModal('建立新的身分', h('div', null, field('暱稱', nickIn), field('聯絡方式類型', ctype), field('聯絡帳號', cval), err,
+    h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'),
+      h('button', {class: 'btn primary', onClick: () => {
+        const r = commit(s => createUser(s, {nickname: nickIn.value, contactType: ctype.value, contactValue: cval.value}));
+        if (r.ok){ closeModal(); location.hash = '#/cards'; toast('已建立並切換到新身分', 'ok'); } else err.textContent = r.error || '';
+      }}, '建立'))));
+}
+function resetAll(){
+  const fresh = buildSeed(nowTs());
+  const saved = persist(fresh);
+  if (!saved.ok) return fail(saved.error);
+  state = fresh; faceCache.clear();
+  location.hash = '#/market';
+  render();
+  toast('已還原範例資料', 'ok');
+  return {ok: true};
+}
+
+// ---------- 啟動 ----------
+function boot(){
+  let loaded = null, problem = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw != null){ const r = parseStored(raw); loaded = r.state; problem = r.problem; }
+  } catch (e){
+    persistDisabled = true;
+    storageNotice = '這個瀏覽器無法儲存資料，所有變更只在本次瀏覽有效，重新整理後會消失。';
+  }
+  if (problem === 'version' && !confirm('偵測到舊版資料，需要還原成範例資料才能繼續。要現在還原嗎？\n（按「取消」會以暫存模式使用，不會覆蓋你原本的資料。）')){
+    persistDisabled = true;
+    storageNotice = '目前是暫存模式：變更不會儲存，舊資料也不會被覆蓋。';
+  }
+  if (!loaded){
+    loaded = buildSeed(nowTs());
+    if (!persistDisabled){
+      const saved = persist(loaded);
+      if (!saved.ok){ persistDisabled = true; storageNotice = '這個瀏覽器無法儲存資料，所有變更只在本次瀏覽有效。'; }
+    }
+  }
+  state = loaded;
+  render();
+}
+if (typeof document !== 'undefined' && typeof window !== 'undefined' && !window.__CARATOPIA_TEST__) boot();
+</script>
+</body>
+</html>
