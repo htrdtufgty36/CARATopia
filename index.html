@@ -37,7 +37,7 @@ p{margin:.4em 0}
 .banner.warn{background:#fff4dd;color:var(--warn)}
 
 nav.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
-nav.bottom ul{list-style:none;margin:0 auto;padding:0;max-width:980px;display:grid;grid-template-columns:repeat(5,1fr)}
+nav.bottom ul{list-style:none;margin:0 auto;padding:0;max-width:980px;display:grid;grid-template-columns:repeat(4,1fr)}
 nav.bottom a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;text-decoration:none;color:var(--muted);font-size:.74rem;position:relative}
 nav.bottom a .ic{font-size:1.25rem;line-height:1}
 nav.bottom a.on{color:var(--blue-d);font-weight:700}
@@ -135,6 +135,17 @@ select:focus,input:focus,textarea:focus{outline:3px solid var(--blue-l);border-c
 .trade .sides{display:grid;grid-template-columns:1fr;gap:6px;margin:8px 0}
 @media(min-width:600px){.trade .sides{grid-template-columns:1fr 1fr}}
 .trade .sides h4{margin:0 0 2px;font-size:.85rem;color:var(--muted)}
+.chat{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+.chat-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:var(--blue-l);font-weight:600;font-size:.9rem}
+.chat-log{max-height:240px;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:#fcfcfe}
+.msg{max-width:82%;padding:6px 10px;border-radius:12px;font-size:.92rem;word-break:break-word;white-space:pre-wrap}
+.msg small{display:block;color:var(--muted);font-size:.7rem;margin-top:2px}
+.msg.me{align-self:flex-end;background:var(--blue-d);color:#fff;border-bottom-right-radius:4px}
+.msg.me small{color:rgba(255,255,255,.78)}
+.msg.them{align-self:flex-start;background:var(--rose-l);border-bottom-left-radius:4px}
+.chat-form{display:flex;gap:8px;padding:8px;border-top:1px solid var(--line)}
+.chat-form input{flex:1}
+.chat-empty{color:var(--muted);text-align:center;font-size:.85rem;padding:12px}
 .contact{background:#fbf6e6;border:1px solid #efe0b0;border-radius:10px;padding:8px 12px;margin:8px 0}
 .guide{font-size:.85rem;color:var(--muted);margin:6px 0 0;padding-left:1.2em}
 details.fold{margin-top:16px}
@@ -172,6 +183,16 @@ const PRIORITY_LABEL = {3:'高',2:'中',1:'低'};
 const TRADE_STATUS_LABEL = {pending:'待回覆',negotiating:'洽談中',completed:'已完成',declined:'已拒絕',cancelled:'已取消',void:'已失效'};
 const ACTIVE_STATUSES = ['pending','negotiating'];
 const PRICE_MSG = '本站為純交換，不可標示價格或金錢';
+const CHAT_PRICE_MSG = '本站為純交換，不可在這裡討論價格或金錢。若要協議運費，請改用對方的聯絡方式私下聯絡。';
+const MAX_MESSAGE_LEN = 300;
+const MAX_MESSAGES = 200;
+// 示範用自動回覆：依「對方已經說過幾句」依序使用，最後一句重複使用
+const AUTO_REPLIES = [
+  '你好！謝謝你願意交換～我的卡都有好好保存，你偏好面交還是郵寄呢？',
+  '好的！面交的話我平日晚上或週末都可以，你方便哪個時段？',
+  '沒問題～那我們先各自拍一下卡片實拍照互傳確認吧 📷',
+  '收到！有任何問題再跟我說～'
+];
 const PRICE_RE = /[$＄]|(^|[^A-Za-z])NT(?=[\s\d])|元|售|賣|收購|價|錢|匯款|轉帳/i;
 
 function nowTs(){ return Date.now(); }
@@ -281,7 +302,8 @@ function proposeTrade(state, fromId, toId, giveIds, getIds, ack){
     id: newId(state, 't'), fromUserId: fromId, toUserId: toId,
     giveItems: plan.giveItems, getItems: plan.getItems,
     status: 'pending', voidReason: '', noMoneyAck: true,
-    doneByFrom: false, doneByTo: false, createdAt: nowTs(), updatedAt: nowTs()
+    doneByFrom: false, doneByTo: false, messages: [], chatClearedAt: {},
+    createdAt: nowTs(), updatedAt: nowTs()
   };
   state.trades.push(t);
   sweep(state);
@@ -381,6 +403,68 @@ function markDone(state, tradeId, userId){
   }
   sweep(state);
   return {ok: true, completed: t.status === 'completed'};
+}
+
+// ---------- 對話（只在洽談中可傳訊息；結束後唯讀，各自可刪除自己這邊的紀錄）----------
+function visibleMessages(t, userId){
+  const cut = (t.chatClearedAt && t.chatClearedAt[userId]) || 0;
+  return (t.messages || []).filter(m => m.createdAt > cut);
+}
+function nextMessageTs(t){
+  let ts = nowTs();
+  for (const m of t.messages) ts = Math.max(ts, m.createdAt + 1);
+  for (const c of Object.values(t.chatClearedAt || {})) ts = Math.max(ts, c + 1);
+  return ts;
+}
+function sendMessage(state, tradeId, userId, text){
+  const t = byId(state.trades, tradeId);
+  if (!t) return fail('找不到這筆交換');
+  if (t.status !== 'negotiating') return fail('只有洽談中的交換可以傳訊息');
+  if (t.fromUserId !== userId && t.toUserId !== userId) return fail('你不是這筆交換的參與者');
+  const msg = String(text == null ? '' : text).trim();
+  if (!msg) return fail('請輸入訊息');
+  if (msg.length > MAX_MESSAGE_LEN) return fail('訊息太長（最多 ' + MAX_MESSAGE_LEN + ' 字）');
+  if (hasPriceWords(msg)) return fail(CHAT_PRICE_MSG);
+  if (t.messages.length >= MAX_MESSAGES) return fail('這段對話已達訊息上限（' + MAX_MESSAGES + ' 則）');
+  const m = {id: newId(state, 'm'), fromUserId: userId, text: msg, createdAt: nextMessageTs(t)};
+  t.messages.push(m);
+  return {ok: true, id: m.id};
+}
+// 刪除「我這邊」的對話紀錄；雙方都刪除後才真正清掉資料。洽談中不能刪。
+function clearChat(state, tradeId, userId){
+  const t = byId(state.trades, tradeId);
+  if (!t) return fail('找不到這筆交換');
+  if (t.fromUserId !== userId && t.toUserId !== userId) return fail('你不是這筆交換的參與者');
+  if (t.status === 'negotiating') return fail('洽談中不能刪除對話，請先完成或取消交換');
+  let last = 0;
+  for (const m of t.messages) last = Math.max(last, m.createdAt);
+  t.chatClearedAt[userId] = Math.max(nowTs(), last);
+  const both = [t.fromUserId, t.toUserId].every(id => (t.chatClearedAt[id] || 0) >= last);
+  if (both) t.messages = [];
+  return {ok: true};
+}
+// 示範用：玩家（示範帳號或自建身分）傳訊息給範例使用者時，範例使用者會自動回一句
+function shouldAutoReply(state, t, senderId){
+  if (state.meta.autoReply === false || t.status !== 'negotiating') return false;
+  if (t.fromUserId !== senderId && t.toUserId !== senderId) return false;
+  const other = getUser(state, senderId === t.fromUserId ? t.toUserId : t.fromUserId);
+  const sender = getUser(state, senderId);
+  if (!sender || !other) return false;
+  const senderIsPlayer = sender.id === 'u_demo' || !sender.isSample;
+  return senderIsPlayer && other.isSample && other.id !== 'u_demo';
+}
+function addAutoReply(state, tradeId, senderId){
+  const t = byId(state.trades, tradeId);
+  if (!t || !shouldAutoReply(state, t, senderId)) return fail('不需要自動回覆');
+  const otherId = senderId === t.fromUserId ? t.toUserId : t.fromUserId;
+  const said = t.messages.filter(m => m.fromUserId === otherId).length;
+  if (t.messages.length >= MAX_MESSAGES) return fail('已達訊息上限');
+  t.messages.push({id: newId(state, 'm'), fromUserId: otherId, text: AUTO_REPLIES[Math.min(said, AUTO_REPLIES.length - 1)], createdAt: nextMessageTs(t)});
+  return {ok: true};
+}
+function setAutoReply(state, on){
+  state.meta.autoReply = !!on;
+  return {ok: true};
 }
 
 // ---------- 卡片與想要項 ----------
@@ -541,6 +625,11 @@ function checkInvariants(s){
     if (!byId(s.users, t.fromUserId) || !byId(s.users, t.toUserId)) problems.push('交換 ' + t.id + ' 的使用者不存在');
     if (!t.giveItems.length || t.giveItems.length !== t.getItems.length) problems.push('交換 ' + t.id + ' 兩邊張數不一致');
     if (!Object.keys(TRADE_STATUS_LABEL).includes(t.status)) problems.push('交換 ' + t.id + ' 狀態不合法');
+    if (!Array.isArray(t.messages) || !t.chatClearedAt || typeof t.chatClearedAt !== 'object') problems.push('交換 ' + t.id + ' 缺少對話資料');
+    else for (const m of t.messages){
+      if (m.fromUserId !== t.fromUserId && m.fromUserId !== t.toUserId) problems.push('交換 ' + t.id + ' 有不屬於雙方的訊息');
+      if (typeof m.text !== 'string' || !m.text) problems.push('交換 ' + t.id + ' 有空白訊息');
+    }
     if (t.status === 'pending'){
       const r = tradeInvalidReason(s, t);
       if (r) problems.push('待回覆提案 ' + t.id + ' 已無效：' + r);
@@ -576,6 +665,11 @@ function parseStored(text){
   try { s = JSON.parse(text); } catch (e){ return {state: null, problem: 'corrupt'}; }
   if (!s || typeof s !== 'object' || !s.meta || !['users', 'cards', 'wants', 'images', 'trades'].every(k => Array.isArray(s[k]))) return {state: null, problem: 'corrupt'};
   if (s.meta.schemaVersion !== SCHEMA_VERSION) return {state: null, problem: 'version'};
+  // 舊資料（加入對話功能之前）沒有 messages 欄位，補上預設值，不需要使用者重設
+  for (const t of s.trades){
+    if (t && !Array.isArray(t.messages)) t.messages = [];
+    if (t && (!t.chatClearedAt || typeof t.chatClearedAt !== 'object')) t.chatClearedAt = {};
+  }
   let problems;
   try { problems = checkInvariants(s); } catch (e){ problems = ['檢查時發生例外']; }
   if (problems.length) return {state: null, problem: 'corrupt', details: problems};
@@ -599,7 +693,8 @@ function buildSeed(now){
   };
   const T = (id, from, to, give, get, status, extra) => s.trades.push(Object.assign({
     id, fromUserId: from, toUserId: to, giveItems: give.map(g => item(g[0], g[1])), getItems: get.map(g => item(g[0], g[1])),
-    status, voidReason: '', noMoneyAck: true, doneByFrom: false, doneByTo: false, createdAt: tick(), updatedAt: clock
+    status, voidReason: '', noMoneyAck: true, doneByFrom: false, doneByTo: false, messages: [], chatClearedAt: {},
+    createdAt: tick(), updatedAt: clock
   }, extra || {}));
 
   // 示範帳號
@@ -675,8 +770,15 @@ function buildSeed(now){
   W('w_u11a', 'u11', 'Hoshi', 'An Ode', 'A 版', 2);
   W('w_u11b', 'u11', 'The8', 'FML', 'B 版', 3);
   T('t_done', 'u_demo', 'u9', [['c_d9', 'w_u9a']], [['c_u9a', 'w_d8']], 'completed', {doneByFrom: true, doneByTo: true});
+  const done = byId(s.trades, 't_done'), chatT = done.createdAt;
+  done.messages = [
+    {id: 'm_h1', fromUserId: 'u9', text: '嗨！我週六下午在公館可以面交，你方便嗎？', createdAt: chatT + 60000},
+    {id: 'm_h2', fromUserId: 'u_demo', text: '可以！那我們 3 點在捷運公館站 2 號出口見～', createdAt: chatT + 120000},
+    {id: 'm_h3', fromUserId: 'u9', text: '好的，到時候見！我會拿著藍色卡套 😊', createdAt: chatT + 180000},
+    {id: 'm_h4', fromUserId: 'u_demo', text: '交換完成，謝謝你！卡況跟照片一樣好～', createdAt: chatT + 3600000}
+  ];
   T('t_decl', 'u_demo', 'u11', [['c_d8', 'w_u11b']], [['c_u11a', 'w_d7']], 'declined');
-  // 其他市集與許願牆的熱鬧程度（不與示範帳號配對）
+  // 其他使用者：讓市集熱鬧，且不與示範帳號配對
   U('u7', '柚子', 'LINE', 'yuzu17');
   C('c_u7a', 'u7', 'Woozi', 'FML', 'A 版', '良好');
   C('c_u7b', 'u7', 'Vernon', '17 Is Right Here', 'B 版', '全新');
@@ -708,6 +810,7 @@ const LOGIC = {
   MEMBERS, ALBUMS, VERSIONS, CONDITIONS, CONTACT_TYPES, ANY, SCHEMA_VERSION, STORAGE_KEY,
   hasPriceWords, cardMatchesWant, assignCardsToWants, findMatches, activeTradeBetween, pendingCount,
   planProposal, proposeTrade, tradeInvalidReason, sweep, acceptTrade, declineTrade, cancelTrade, markDone,
+  visibleMessages, sendMessage, clearChat, shouldAutoReply, addAutoReply, setAutoReply, AUTO_REPLIES, MAX_MESSAGE_LEN, MAX_MESSAGES,
   addCards, updateCard, removeCard, addWant, updateWant, removeWant, editBlockReason,
   createUser, updateUser, setCurrentUser, checkInvariants, parseStored, buildSeed, cardsOf, wantsOf, cardLabel, wantLabel
 };
@@ -893,7 +996,7 @@ function navigate(name){
 }
 window.addEventListener('hashchange', () => { closeModal(); render(); });
 
-const NAV = [['market', '🛍', '市集'], ['match', '💞', '配對'], ['cards', '🗂', '我的卡冊'], ['wall', '🌠', '許願牆'], ['trades', '🔄', '交換']];
+const NAV = [['market', '🛍', '市集'], ['match', '💞', '配對'], ['cards', '🗂', '我的卡冊'], ['trades', '🔄', '交換']];
 function shell(route, content){
   const u = me();
   const badge = pendingCount(state, u.id);
@@ -916,9 +1019,16 @@ function render(){
   const u = me();
   if (!u){ app.replaceChildren(viewWelcome()); return; }
   const route = parseRoute();
-  const views = {market: viewMarket, match: viewMatch, cards: viewCards, wall: viewWall, trades: viewTrades, settings: viewSettings};
+  const views = {market: viewMarket, match: viewMatch, cards: viewCards, trades: viewTrades, settings: viewSettings};
   const view = views[route.name] || viewMarket;
+  // 重新繪製時保留正在輸入的訊息與捲動位置（例如示範自動回覆到達時）
+  const ae = document.activeElement;
+  const keep = ae && ae.id && ae.id.startsWith('chat-') ? {id: ae.id, value: ae.value} : null;
+  const y = window.scrollY;
   app.replaceChildren(shell(route.name in views ? route : {name: 'market'}, view(route)));
+  if (keep){ const el = document.getElementById(keep.id); if (el){ el.value = keep.value; el.focus(); } }
+  if (route.name === (render.lastRoute || route.name)) window.scrollTo(0, y);
+  render.lastRoute = route.name;
   if (route.name === 'match' && route.arg){
     history.replaceState(null, '', '#/match');
     const m = findMatches(state, u.id).find(x => x.userId === route.arg);
@@ -1002,14 +1112,14 @@ function viewMatch(){
       h('p', {class: 'small'}, '目前：可交換的卡 ' + myCards.length + ' 張、想要項 ' + myWants.length + ' 筆'),
       h('div', {class: 'row', style: 'justify-content:center;margin-top:10px'},
         h('button', {class: 'btn primary', onClick: () => { ui.cardsTab = myCards.length ? 'want' : 'have'; navigate('cards'); }}, '去登錄'),
-        h('button', {class: 'btn', onClick: () => navigate('wall')}, '逛逛許願牆'))));
+        h('button', {class: 'btn', onClick: () => navigate('market')}, '逛逛市集'))));
   }
   const matches = findMatches(state, u.id);
   if (!matches.length){
     return h('div', null, head, h('div', {class: 'empty'},
-      h('p', null, '目前沒有雙向配對。'), h('p', {class: 'small'}, '到市集看看別人有什麼卡，或把想要的卡加進清單，也可以看許願牆有沒有人要你的卡。'),
+      h('p', null, '目前沒有雙向配對。'), h('p', {class: 'small'}, '到市集看看別人有什麼卡，把想要的卡加進清單，或登錄更多你願意交換的卡，就有機會配到。'),
       h('div', {class: 'row', style: 'justify-content:center;margin-top:10px'},
-        h('button', {class: 'btn', onClick: () => navigate('market')}, '去市集'), h('button', {class: 'btn', onClick: () => navigate('wall')}, '去許願牆'))));
+        h('button', {class: 'btn', onClick: () => navigate('market')}, '去市集'), h('button', {class: 'btn', onClick: () => navigate('cards')}, '我的卡冊'))));
   }
   return h('div', null, head, matches.map(m => {
     const o = getUser(state, m.userId);
@@ -1107,7 +1217,7 @@ function viewCards(){
     body = h('div', null,
       h('div', {class: 'row between', style: 'margin-bottom:10px'}, h('p', {class: 'muted small', style: 'margin:0'}, '專輯與版本可選「不限」。一個想要項最多換到一張卡。'),
         h('button', {class: 'btn primary', onClick: () => openWantForm(null)}, '＋ 新增想要')),
-      active.length ? h('div', {class: 'panel'}, active.map(row)) : h('div', {class: 'empty'}, '還沒有想要的卡。按「新增想要」，或去市集、許願牆挑選。'),
+      active.length ? h('div', {class: 'panel'}, active.map(row)) : h('div', {class: 'empty'}, '還沒有想要的卡。按「新增想要」，或到市集看到喜歡的卡，按「加入我的想要」。'),
       done.length > 0 && h('details', {class: 'fold'}, h('summary', null, '已達成的想要（' + done.length + '）'), h('div', {class: 'panel'}, done.map(row))));
   }
   return h('div', null, h('div', {class: 'page-title'}, h('h1', null, '我的卡冊')), tabs, body);
@@ -1170,25 +1280,6 @@ function openWantForm(want, prefill){
     h('div', {class: 'modal-foot'}, h('button', {class: 'btn', onClick: closeModal}, '取消'), h('button', {class: 'btn primary', onClick: save}, want ? '儲存' : '新增'))));
 }
 
-// ---------- 許願牆 ----------
-function viewWall(){
-  const u = me();
-  const myCards = cardsOf(state, u.id, 'available');
-  const matches = findMatches(state, u.id);
-  const wants = state.wants.filter(w => w.status === 'open' && w.ownerId !== u.id);
-  const groups = MEMBERS.map(m => [m, wants.filter(w => w.member === m)]).filter(g => g[1].length);
-  return h('div', null,
-    h('div', {class: 'page-title'}, h('h1', null, '許願牆'), h('p', null, '大家想要的卡。看到你有的，就是機會！')),
-    groups.length ? groups.map(g => h('section', {class: 'panel'}, h('h3', null, g[0]), g[1].map(w => {
-      const mine = myCards.filter(c => cardMatchesWant(c, w));
-      const m = matches.find(x => x.userId === w.ownerId);
-      return h('div', {class: 'item'},
-        h('div', null, h('strong', null, wantLabel(w)), h('div', {class: 'small muted'}, nick(w.ownerId) + '　優先：' + PRIORITY_LABEL[w.priority]),
-          mine.length > 0 && h('span', {class: 'badge ok'}, '我有這張（' + mine.length + '）')),
-        m && !m.activeTrade && h('button', {class: 'btn sm primary', onClick: () => { location.hash = '#/match/' + w.ownerId; }}, '前往配對'));
-    }))) : h('div', {class: 'empty'}, '許願牆目前是空的。'));
-}
-
 // ---------- 交換紀錄 ----------
 function viewTrades(){
   const u = me();
@@ -1246,8 +1337,46 @@ function tradeCard(t){
       t.status === 'negotiating' && h('ul', {class: 'guide'},
         h('li', null, '面交：選公共場所，先確認卡況。'), h('li', null, '郵寄：建議雙方同日寄出並互傳單號，先後順序由你們協議。'),
         h('li', null, '建議先互傳卡片實拍照。'), h('li', null, '談不攏請按「取消交換」，卡片會恢復為可交換。'))),
+    chatPanel(t, other),
     h('div', {class: 'small muted'}, '建立：' + fmtTime(t.createdAt) + '　更新：' + fmtTime(t.updatedAt)),
     actions.length > 0 && h('div', {class: 'row', style: 'margin-top:10px'}, actions));
+}
+
+function chatPanel(t, other){
+  const u = me();
+  const msgs = visibleMessages(t, u.id);
+  const active = t.status === 'negotiating';
+  if (!active && !msgs.length) return null;
+  const log = h('div', {class: 'chat-log', role: 'log', 'aria-label': '與 ' + other.nickname + ' 的對話'},
+    msgs.length ? msgs.map(m => h('div', {class: 'msg ' + (m.fromUserId === u.id ? 'me' : 'them')}, m.text,
+      h('small', null, (m.fromUserId === u.id ? '我' : nick(m.fromUserId)) + '・' + fmtTime(m.createdAt))))
+      : h('div', {class: 'chat-empty'}, '還沒有訊息，打個招呼吧！'));
+  setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
+  const err = h('p', {class: 'form-error', role: 'alert', style: 'padding:0 12px;margin:0'});
+  let form = null;
+  if (active){
+    const input = h('input', {type: 'text', id: 'chat-' + t.id, maxlength: MAX_MESSAGE_LEN, 'aria-label': '訊息',
+      placeholder: '輸入訊息…（純交換，請勿討論價格或金錢）', autocomplete: 'off'});
+    const send = () => {
+      const y = window.scrollY;
+      const res = commit(s => sendMessage(s, t.id, u.id, input.value));
+      if (!res.ok){ err.textContent = res.error || ''; return; }
+      const again = document.getElementById('chat-' + t.id);
+      if (again){ again.value = ''; again.focus(); }   // 重新繪製時會還原舊文字，送出成功後要清空
+      window.scrollTo(0, y);
+      const tr = byId(state.trades, t.id);
+      if (tr && shouldAutoReply(state, tr, u.id)) setTimeout(() => { commit(s => addAutoReply(s, t.id, u.id)); }, 1100);
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); send(); } });
+    form = h('div', null, h('div', {class: 'chat-form'}, input, h('button', {class: 'btn primary', onClick: send}, '送出')), err,
+      other.isSample && h('p', {class: 'small muted', style: 'padding:0 12px 8px;margin:0'}, '示範用單機對話：訊息只存在這個瀏覽器，可用「以對方身分查看」從對方立場回覆。'));
+  }
+  return h('div', {class: 'chat'},
+    h('div', {class: 'chat-head'}, h('span', null, active ? '💬 與 ' + other.nickname + ' 的對話' : '💬 對話紀錄（唯讀）'),
+      !active && h('button', {class: 'btn sm danger', onClick: () => openConfirm({title: '刪除我這邊的對話紀錄？',
+        message: '只會刪除你這邊看到的紀錄，對方那邊不受影響；雙方都刪除後才會真正清除。此動作無法復原。', okLabel: '刪除', danger: true,
+        onOk: () => commit(s => clearChat(s, t.id, u.id))})}, '刪除我這邊的紀錄')),
+    log, form);
 }
 
 // ---------- 設定 ----------
@@ -1267,6 +1396,9 @@ function viewSettings(){
     h('section', {class: 'panel'}, h('h3', null, '切換身分（示範用）'),
       h('p', {class: 'small muted'}, '資料只存在這個瀏覽器，所以用切換身分來扮演交換的另一方。'), field('目前身分', who),
       h('button', {class: 'btn', onClick: openNewIdentity}, '建立新的身分')),
+    h('section', {class: 'panel'}, h('h3', null, '示範自動回覆'),
+      h('p', {class: 'small muted'}, '開啟時，你在洽談中的對話框傳訊息給範例使用者，對方會自動回覆一句，方便一個人展示。'),
+      h('label', {class: 'checkline'}, h('input', {type: 'checkbox', checked: state.meta.autoReply !== false, onChange: e => commit(s => setAutoReply(s, e.target.checked))}), h('span', null, '啟用示範自動回覆'))),
     h('section', {class: 'panel'}, h('h3', null, '重設資料'),
       h('p', {class: 'small muted'}, '清除你在這個瀏覽器的所有資料（包含自己建立的身分與卡片），還原成範例資料。'),
       h('button', {class: 'btn danger', onClick: () => openConfirm({title: '重設所有資料？', message: '這個動作無法復原。', okLabel: '確定重設', danger: true, onOk: resetAll})}, '重設資料')),
